@@ -89,7 +89,8 @@ function build(opts) {
 			fs.removeAsync(path.join(distDir, '/node_modules/')),
 			fs.removeAsync(path.join(distDir, '/cache.json')),
 			fs.removeAsync(path.join(distDir, '/package.json')),
-			fs.removeAsync(path.join(distDir, '/package-lock.json')),
+			// save for flathub build
+			fs.copyFile(path.join(distDir, '/package-lock.json'), path.join(dirname, '..', 'package-lock-desktop.json')),
 			fs.removeAsync(path.join(distDir, '/src/')),
 		]))
 }

@@ -162,7 +162,7 @@ module.exports = function (opts) {
 				"target": [
 					{
 						"target": unpacked ? "dir" : "AppImage",
-						"arch": "x64"
+						"arch": (process.arch === "arm") ? "armv7l" : process.arch
 					}
 				]
 			}
