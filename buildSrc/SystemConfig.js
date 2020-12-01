@@ -76,7 +76,7 @@ function devTestConfig() {
 			"ospec/ospec.js": "../node_modules/ospec/ospec.js",
 			"velocity-animate": "../node_modules/velocity-animate/velocity.js",
 			"prismjs": "../node_modules/prismjs",
-			"faker": "../node_modules/faker/build/build/faker.min.js",
+			"faker": "../node_modules/faker/build/build/faker.min.js"
 		})
 	})
 }

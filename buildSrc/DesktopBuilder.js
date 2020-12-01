@@ -159,7 +159,7 @@ function babelCompile(src, srcFile) {
 		comments: false,
 		babelrc: false,
 		retainLines: true,
-		sourceMaps: srcFile != null ? "inline" : false,
+		sourceMaps: srcFile != null,
 		filename: srcFile,
 	})
 }

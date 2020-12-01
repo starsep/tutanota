@@ -2814,8 +2814,14 @@ function evaluate (loader, source, sourceMap, address, integrity, nonce, noWrap)
     }
     if (useVm)
       vm.runInThisContext(getSource(source, sourceMap, address, !noWrap), { filename: address + (sourceMap ? '!transpiled' : '') });
-    else
-      (0, eval)(getSource(source, sourceMap, address, !noWrap));
+    else {
+    	try {
+		    (0, eval)(getSource(source, sourceMap, address, !noWrap));
+	    } catch (e) {
+    		console.error("Failed to evaluate " + address)
+		    throw e
+	    }
+    }
     postExec();
   }
   catch (e) {

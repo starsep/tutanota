@@ -1,3 +1,4 @@
+import 'source-map-support/register'
 import o from "ospec/ospec.js"
 
 import "./common/LoggerTest.js"

@@ -104,7 +104,8 @@ class Builder {
 					})
 				}
 				let result = babelCompile(src, srcFile)
-				return this._writeFile(targetFile, result.code)
+				return this._writeFile(targetFile, result.code + "\n//# sourceMappingURL=" + result.map.file + ".map")
+				           .then(() => this._writeFile(targetFile + ".map", JSON.stringify(result.map)))
 			})
 		} else {
 			return fs.ensureDirAsync(path.dirname(targetFile)).then(() => fs.copyAsync(srcFile, targetFile, {replace: true}))
@@ -142,8 +143,10 @@ function babelCompile(src, srcFile) {
 		comments: false,
 		babelrc: false,
 		retainLines: true,
-		sourceMaps: srcFile != null ? "inline" : false,
+		sourceMaps: srcFile != null,
 		filename: srcFile,
+		sourceFileName: srcFile,
+		// sourceRoot: "/home/ivk/dev/repositories/tutanota-3/src/",
 	})
 }
 
