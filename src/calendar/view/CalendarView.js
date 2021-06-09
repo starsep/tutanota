@@ -88,6 +88,7 @@ import {GroupInvitationFolderRow} from "../../sharing/view/GroupInvitationFolder
 import {SidebarSection} from "../../gui/SidebarSection"
 import {ReceivedGroupInvitationsModel} from "../../sharing/model/ReceivedGroupInvitationsModel"
 import type {HtmlSanitizer} from "../../misc/HtmlSanitizer"
+import {renderCalendarSwitchLeftButton, renderCalendarSwitchRightButton} from "./CalendarGuiUtils"
 
 
 export const LIMIT_PAST_EVENTS_YEARS = 100
@@ -271,15 +272,21 @@ export class CalendarView implements CurrentView {
 				}
 			},
 		}, ColumnType.Background, size.second_col_min_width + size.third_col_min_width, size.third_col_max_width, () => {
-			if (this._currentViewType === CalendarViewType.MONTH) {
-				return formatMonthWithFullYear(this.selectedDate())
-			} else if (this._currentViewType === CalendarViewType.DAY) {
-				return formatDateWithWeekday(this.selectedDate())
-			} else if (this._currentViewType === CalendarViewType.AGENDA) {
-				return lang.get("agenda_label")
-			} else {
-				return ""
-			}
+
+			const left = (title) => renderCalendarSwitchLeftButton(title, () => this._viewPeriod(false))
+			const right = (title) => renderCalendarSwitchRightButton(title, () => this._viewPeriod(true))
+
+			return {
+				[CalendarViewType.DAY]: formatDateWithWeekday(this.selectedDate()),
+				// week view doesn't exist on mobile so we don't bother making buttons/title
+				[CalendarViewType.WEEK]: "",
+				[CalendarViewType.MONTH]: {
+					left: left("prevMonth_label"),
+					middle: formatMonthWithFullYear(this.selectedDate()),
+					right: right("nextMonth_label")
+				},
+				[CalendarViewType.AGENDA]: lang.get("agenda_label")
+			}[this._currentViewType]
 		})
 
 		this.viewSlider = new ViewSlider([this.sidebarColumn, this.contentColumn], "CalendarView")

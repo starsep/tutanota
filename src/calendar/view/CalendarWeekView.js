@@ -25,12 +25,11 @@ import {ContinuingCalendarEventBubble} from "./ContinuingCalendarEventBubble"
 import type {WeekStartEnum} from "../../api/common/TutanotaConstants"
 import {EventTextTimeOption, WeekStart} from "../../api/common/TutanotaConstants"
 import {lastThrow} from "../../api/common/utils/ArrayUtils"
-import {Icon} from "../../gui/base/Icon"
-import {Icons} from "../../gui/base/icons/Icons"
 import {lang} from "../../misc/LanguageViewModel"
 import {PageView} from "../../gui/base/PageView"
 import type {CalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
 import {logins} from "../../api/main/LoginController"
+import {renderCalendarSwitchLeftButton, renderCalendarSwitchRightButton} from "./CalendarGuiUtils"
 
 export type Attrs = {
 	selectedDate: Date,
@@ -108,12 +107,8 @@ export class CalendarWeekView implements MComponent<Attrs> {
 				style: {height: px(45 + 24 + mainWeek.longEvents.maxColumns * CALENDAR_EVENT_HEIGHT + marginForWeekEvents + 8)},
 			}, [
 				m(".pr-l.flex.row.items-center", [
-					m("button.calendar-switch-button", {
-						onclick: () => attrs.onChangeWeek(false),
-					}, m(Icon, {icon: Icons.ArrowDropLeft, class: "icon-large switch-month-button"})),
-					m("button.calendar-switch-button", {
-						onclick: () => attrs.onChangeWeek(true),
-					}, m(Icon, {icon: Icons.ArrowDropRight, class: "icon-large switch-month-button"})),
+					renderCalendarSwitchLeftButton("prevWeek_label", () => attrs.onChangeWeek(false)),
+					renderCalendarSwitchRightButton("nextWeek_label", () => attrs.onChangeWeek(true)),
 					m("h1", title),
 					// According to ISO 8601, weeks always start on Monday. Week numbering systems for
 					// weeks that do not start on Monday are not strictly defined, so we only display

@@ -1381,6 +1381,10 @@ export default {
 		"yourCalendars_label": "Your calendars",
 		"yourFolders_action": "YOUR FOLDERS",
 		"yourMessage_label": "Your message",
-		"you_label": "You"
+		"you_label": "You",
+		"prevMonth_label": "Previous month",
+		"nextMonth_label": "Next month",
+		"prevWeek_label": "Previous week",
+		"nextWeek_label": "Next week"
 	}
 }

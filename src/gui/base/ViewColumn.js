@@ -13,6 +13,12 @@ export const ColumnType = {
 	Foreground: 0
 }
 
+type HeaderCenter = {
+	left: Child,
+	middle: string,
+	right: Child
+}
+
 type Attrs = {rightBorder?: boolean}
 
 export class ViewColumn {
@@ -20,7 +26,7 @@ export class ViewColumn {
 	columnType: ColumnTypeEnum;
 	minWidth: number;
 	maxWidth: number;
-	title: ?lazy<string>;
+	headerCenter: lazy<string | HeaderCenter>
 	ariaLabel: ?lazy<string>;
 	width: number;
 	offset: number; // offset to the left
@@ -38,12 +44,12 @@ export class ViewColumn {
 	 * @param maxWidth The maximum allowed width for the view column.
 	 * @param title A function that returns the translated title text for a column.
 	 */
-	constructor(component: Component, columnType: ColumnTypeEnum, minWidth: number, maxWidth: number, title: ?lazy<string>, ariaLabel: ?lazy<string>) {
+	constructor(component: Component, columnType: ColumnTypeEnum, minWidth: number, maxWidth: number, headerCenter: ?lazy<string | HeaderCenter>, ariaLabel: ?lazy<string>) {
 		this.component = component
 		this.columnType = columnType
 		this.minWidth = minWidth
 		this.maxWidth = maxWidth
-		this.title = title
+		this.headerCenter = headerCenter || (() => "")
 		this.ariaLabel = ariaLabel
 		this.width = minWidth
 		this.offset = 0
@@ -86,7 +92,24 @@ export class ViewColumn {
 	}
 
 	getTitle(): string {
-		return this.title ? this.title() : ""
+		const center = this.headerCenter()
+		return typeof center === "string"
+			? center
+			: center.middle
+	}
+
+	getTitleButtonLeft(): ?Child {
+		const center = this.headerCenter()
+		return typeof center === "string"
+			? null
+			: center.left
+	}
+
+	getTitleButtonRight(): ?Child {
+		const center = this.headerCenter()
+		return typeof center === "string"
+			? null
+			: center.right
 	}
 
 	getOffsetForeground(foregroundState: boolean): number {
