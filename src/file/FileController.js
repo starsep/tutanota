@@ -161,12 +161,18 @@ export class FileController {
 		return import("../native/common/FileApp").then(({fileApp}) => fileApp.open(file))
 	}
 
-	openDataFile(dataFile: DataFile): Promise<void> {
+	async openDataFile(dataFile: DataFile): Promise<void> {
 		if (isApp() || isDesktop()) {
-			return import("../native/common/FileApp").then(({fileApp}) => fileApp.saveBlob(dataFile))
-			                                         .catch(err => Dialog.error("canNotOpenFileOnDevice_msg"))
-			                                         .then(noOp)
+			try {
+				const {fileApp} = await import("../native/common/FileApp")
+				await fileApp.saveBlob(dataFile)
+			} catch (e) {
+				console.log("error opening file:", e)
+				await Dialog.error("canNotOpenFileOnDevice_msg")
+			}
+			return
 		}
+
 		let saveFunction: Function = window.saveAs || window.webkitSaveAs || window.mozSaveAs || window.msSaveAs
 			|| (navigator: any).saveBlob || (navigator: any).msSaveOrOpenBlob || (navigator: any).msSaveBlob
 			|| (navigator: any).mozSaveBlob || (navigator: any).webkitSaveBlob
