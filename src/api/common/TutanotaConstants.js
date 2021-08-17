@@ -349,7 +349,7 @@ export const SecondFactorType = Object.freeze({
 export type SecondFactorTypeEnum = $Values<typeof SecondFactorType>;
 export const SecondFactorTypeNames = ["U2F", "TOTP"]
 
-export const MAX_ATTACHMENT_SIZE = 1024 * 1024 * 25
+export const MAX_ATTACHMENT_SIZE_BYTES = 1024 * 1024 * 25
 export const MAX_LOGO_SIZE = 1024 * 100
 export const MAX_BASE64_IMAGE_SIZE = MAX_LOGO_SIZE
 

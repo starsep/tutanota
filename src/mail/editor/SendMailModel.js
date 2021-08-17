@@ -5,7 +5,7 @@ import {
 	ConversationType,
 	MailFolderType,
 	MailMethod,
-	MAX_ATTACHMENT_SIZE,
+	MAX_ATTACHMENT_SIZE_BYTES,
 	OperationType,
 	ReplyType
 } from "../../api/common/TutanotaConstants"
@@ -393,7 +393,7 @@ export class SendMailModel {
 		          .then(ce => {
 			          previousMessageId = ce.messageId
 		          })
-		           .catch(ofClass(NotFoundError, e => {
+		          .catch(ofClass(NotFoundError, e => {
 			          console.log("could not load conversation entry", e);
 		          }))
 		// if we reuse the same image references, changing the displayed mail in mail view will cause the minimized draft to lose
@@ -641,23 +641,19 @@ export class SendMailModel {
 
 	/** @throws UserError in case files are too big to add */
 	attachFiles(files: $ReadOnlyArray<Attachment>): void {
-		let totalSize = this._attachments.reduce((total, file) => total + Number(file.size), 0)
-		const tooBigFiles: Array<string> = [];
-		files.forEach(file => {
-			if (totalSize + Number(file.size) > MAX_ATTACHMENT_SIZE) {
-				tooBigFiles.push(file.name)
-			} else {
-				totalSize += Number(file.size)
-				this._attachments.push(file)
-			}
-		})
 
-		this.setMailChanged(true)
+		if (files.length === 0) return
 
-		if (tooBigFiles.length > 0) {
-			throw new UserError(() => lang.get("tooBigAttachment_msg") + tooBigFiles.join(", "))
+		const totalSize = this._attachments.reduce((total, file) => total + Number(file.size), 0)
+
+		if (totalSize > MAX_ATTACHMENT_SIZE_BYTES) {
+			throw new UserError(() => lang.get("attachmentSizeTooLarge_msg", {
+				"{maxSizeInMb}": MAX_ATTACHMENT_SIZE_BYTES / 1024 / 1024
+			}))
 		}
 
+		this._attachments.push(...files)
+		this.setMailChanged(true)
 	}
 
 	removeAttachment(file: Attachment): void {

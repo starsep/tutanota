@@ -62,6 +62,7 @@ import {SaveStatus} from "../model/MinimizedMailEditorViewModel"
 import {newMouseEvent} from "../../gui/HtmlUtils"
 import {isDataFile, isTutanotaFile} from "../../api/common/utils/FileUtils"
 import {parseMailtoUrl} from "../../misc/parsing/MailAddressParser";
+import {showUserError} from "../../misc/ErrorHandlerImpl"
 
 export type MailEditorAttrs = {
 	model: SendMailModel,
@@ -681,8 +682,7 @@ export async function newMailtoUrlMailEditor(mailtoUrl: string, confidential: bo
 	)
 }
 
-
-export function newMailEditorFromTemplate(
+export async function newMailEditorFromTemplate(
 	mailboxDetails: MailboxDetail,
 	recipients: Recipients,
 	subject: string,
@@ -691,9 +691,20 @@ export function newMailEditorFromTemplate(
 	confidential?: boolean,
 	senderMailAddress?: string): Promise<Dialog> {
 
-	return defaultSendMailModel(mailboxDetails)
-		.initWithTemplate(recipients, subject, bodyText, attachments, confidential, senderMailAddress)
-		.then(model => createMailEditorDialog(model))
+	let model
+	try {
+		model = await defaultSendMailModel(mailboxDetails)
+			.initWithTemplate(recipients, subject, bodyText, attachments, confidential, senderMailAddress)
+	} catch (e) {
+		if (e instanceof UserError) {
+			model = await defaultSendMailModel(mailboxDetails)
+				.initWithTemplate(recipients, subject, bodyText, [], confidential, senderMailAddress)
+			} else {
+			throw e
+		}
+		}
+
+	return createMailEditorDialog(model)
 }
 
 

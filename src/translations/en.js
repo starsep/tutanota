@@ -1396,6 +1396,7 @@ export default {
 		"yourFolders_action": "YOUR FOLDERS",
 		"yourMessage_label": "Your message",
 		"you_label": "You",
-		"attachmentWarning_msg": "Another Application wants to attach the following files to a new email:"
+		"attachmentWarning_msg": "Another Application wants to attach the following files to a new email:",
+		"attachmentSizeTooLarge_msg": "The files could not be attached because the total size exceeds {maxSizeInMb}MB"
 	}
 }

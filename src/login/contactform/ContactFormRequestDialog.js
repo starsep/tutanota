@@ -5,7 +5,7 @@ import {Button} from "../../gui/base/Button"
 import {Type} from "../../gui/base/TextFieldN"
 import {lang} from "../../misc/LanguageViewModel"
 import {formatStorageSize} from "../../misc/Formatter"
-import {ConversationType, InputFieldType, Keys, MailMethod, MAX_ATTACHMENT_SIZE, PushServiceType} from "../../api/common/TutanotaConstants"
+import {ConversationType, InputFieldType, Keys, MailMethod, MAX_ATTACHMENT_SIZE_BYTES, PushServiceType} from "../../api/common/TutanotaConstants"
 import {animations, height} from "../../gui/animation/Animations"
 import {assertMainOrNode} from "../../api/common/Env"
 import {fileController} from "../../file/FileController"
@@ -243,7 +243,7 @@ export class ContactFormRequestDialog {
 		})
 		let tooBigFiles = [];
 		files.forEach(file => {
-			if (totalSize + Number(file.size) > MAX_ATTACHMENT_SIZE) {
+			if (totalSize + Number(file.size) > MAX_ATTACHMENT_SIZE_BYTES) {
 				tooBigFiles.push(file.name)
 			} else {
 				totalSize += Number(file.size)
