@@ -1106,6 +1106,17 @@ styles.registerStyle('main', () => {
 			'background': theme.list_alternate_bg
 		},
 
+		'.calendar-day-number:hover': {
+			opacity: 0.7,
+		},
+
+		'.calendar-day:hover .calendar-day-number': {
+			background: theme.content_message_bg,
+			'border-radius': '50%',
+			color: theme.navigation_button_icon,
+		},
+
+
 		'.calendar-hour': {
 			'cursor': 'pointer',
 			'border-bottom': `1px solid ${theme.content_border}`,

@@ -161,9 +161,8 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 		return m(".calendar-day.calendar-column-border.flex-grow.rel.overflow-hidden.fill-absolute"
 			+ (d.paddingDay ? ".calendar-alternate-background" : ""), {
 				key: d.date.getTime(),
-				onclick: () => attrs.onDateSelected(new Date(d.date)),
-				oncontextmenu: (e) => {
-					if (styles.isDesktopLayout()) {
+				onclick: (e) => {
+					if (!styles.isDesktopLayout()) {
 						const newDate = new Date(d.date)
 						let hour = new Date().getHours()
 						if (hour < 23) {
@@ -178,7 +177,12 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 				}
 			},
 			[
-				m(".calendar-day-indicator.calendar-day-number" + getDateIndicator(d.date, null, today), String(d.day)),
+				m(".calendar-day-indicator.calendar-day-number" + getDateIndicator(d.date, null, today), {
+					onclick: e => {
+						attrs.onDateSelected(new Date(d.date))
+						e.stopPropagation()
+					}
+				}, String(d.day)),
 				// According to ISO 8601, weeks always start on Monday. Week numbering systems for
 				// weeks that do not start on Monday are not strictly defined, so we only display
 				// a week number if the user's client is configured to start weeks on Monday
