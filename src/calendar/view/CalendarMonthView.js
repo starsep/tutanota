@@ -162,7 +162,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 			+ (d.paddingDay ? ".calendar-alternate-background" : ""), {
 				key: d.date.getTime(),
 				onclick: (e) => {
-					if (!styles.isDesktopLayout()) {
+					if (styles.isDesktopLayout()) {
 						const newDate = new Date(d.date)
 						let hour = new Date().getHours()
 						if (hour < 23) {
