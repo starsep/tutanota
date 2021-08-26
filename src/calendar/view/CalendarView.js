@@ -420,6 +420,7 @@ export class CalendarView implements CurrentView {
 
 	_renderCalendarViewButtons(): Children {
 		const calendarViewValues = [
+			{name: lang.get("week_label"), value: CalendarViewType.WEEK, icon: Icons.Table, href: "/calendar/week"},
 			{name: lang.get("month_label"), value: CalendarViewType.MONTH, icon: Icons.Table, href: "/calendar/month"},
 			{name: lang.get("agenda_label"), value: CalendarViewType.AGENDA, icon: Icons.ListUnordered, href: "/calendar/agenda"},
 		]
