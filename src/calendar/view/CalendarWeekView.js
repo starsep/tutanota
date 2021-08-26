@@ -5,14 +5,16 @@ import {getStartOfDay, incrementDate} from "../../api/common/utils/DateUtils"
 import {styles} from "../../gui/styles"
 import {formatTime} from "../../misc/Formatter"
 import {
-	CALENDAR_EVENT_HEIGHT, DEFAULT_HOUR_OF_DAY,
+	CALENDAR_EVENT_HEIGHT,
+	DEFAULT_HOUR_OF_DAY,
 	eventEndsAfterDay,
 	eventStartsBefore,
 	getCalendarWeek,
 	getDiffInDays,
 	getEventColor,
 	getEventEnd,
-	getEventStart, getTimeZone,
+	getEventStart,
+	getTimeZone,
 	getWeekNumber,
 	layOutEvents
 } from "../date/CalendarUtils"
@@ -23,7 +25,7 @@ import {theme} from "../../gui/theme"
 import {px, size} from "../../gui/size"
 import {ContinuingCalendarEventBubble} from "./ContinuingCalendarEventBubble"
 import type {WeekStartEnum} from "../../api/common/TutanotaConstants"
-import {EventTextTimeOption, WeekStart} from "../../api/common/TutanotaConstants"
+import {WeekStart} from "../../api/common/TutanotaConstants"
 import {lastThrow} from "../../api/common/utils/ArrayUtils"
 import {Icon} from "../../gui/base/Icon"
 import {Icons} from "../../gui/base/icons/Icons"
@@ -271,7 +273,7 @@ export class CalendarWeekView implements MComponent<Attrs> {
 						endsAfter,
 						color: getEventColor(event, attrs.groupColors),
 						onEventClicked: attrs.onEventClicked,
-						showTime: isAllDayEvent(event) ? EventTextTimeOption.NO_TIME : EventTextTimeOption.START_TIME,
+						showTime: !isAllDayEvent(event),
 						user: logins.getUserController().user
 					}))
 				}))

@@ -4,7 +4,6 @@ import type {
 	AlarmIntervalEnum,
 	CalendarAttendeeStatusEnum,
 	EndTypeEnum,
-	EventTextTimeOptionEnum,
 	RepeatPeriodEnum,
 	WeekStartEnum
 } from "../../api/common/TutanotaConstants"
@@ -13,7 +12,6 @@ import {
 	CalendarAttendeeStatus,
 	defaultCalendarColor,
 	EndType,
-	EventTextTimeOption,
 	getWeekStart,
 	RepeatPeriod,
 	WeekStart
@@ -291,21 +289,11 @@ function collidesWith(a: CalendarEvent, b: CalendarEvent): boolean {
 }
 
 
-export function getEventText(event: CalendarEvent, showTime: EventTextTimeOptionEnum): string {
-	switch (showTime) {
-		case EventTextTimeOption.NO_TIME:
-			return event.summary
-		case EventTextTimeOption.START_TIME:
-			return `${formatTime(event.startTime)} ${event.summary}`
-		case EventTextTimeOption.END_TIME:
-			return `- ${formatTime(event.endTime)} ${event.summary}`
-		case EventTextTimeOption.START_END_TIME:
-			return `${formatTime(event.startTime)} - ${formatTime(event.endTime)} ${event.summary}`
-		case EventTextTimeOption.ALL_DAY:
-			return `${lang.get("allDay_label")} ${event.summary}`
-		default:
-			throw new Error("Unknown time option " + showTime)
+export function formatEventTime(event: CalendarEvent): string {
+	if (isAllDayEvent(event)) {
+		return lang.get("allDay_label")
 	}
+	return formatTime(event.startTime) + "-" + formatTime(event.endTime)
 }
 
 export function expandEvent(ev: CalendarEvent, columnIndex: number, columns: Array<Array<CalendarEvent>>): number {

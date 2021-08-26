@@ -1,7 +1,6 @@
 //@flow
 import m from "mithril"
 import {CalendarEventBubble} from "./CalendarEventBubble"
-import {EventTextTimeOption} from "../../api/common/TutanotaConstants"
 import {incrementDate} from "../../api/common/utils/DateUtils"
 import {styles} from "../../gui/styles"
 import {lang} from "../../misc/LanguageViewModel"
@@ -9,9 +8,10 @@ import {formatDate, formatDateWithWeekday} from "../../misc/Formatter"
 import {
 	eventEndsAfterDay,
 	eventStartsBefore,
+	formatEventTime,
 	getEventColor,
-	getEventText,
-	getStartOfDayWithZone, getTimeZone,
+	getStartOfDayWithZone,
+	getTimeZone,
 	hasAlarmsForTheUser
 } from "../date/CalendarUtils"
 import {isAllDayEvent} from "../../api/common/utils/CommonCalendarUtils"
@@ -93,20 +93,10 @@ export class CalendarAgendaView implements MComponent<Attrs> {
 								: events.map((ev) => {
 									const startsBefore = eventStartsBefore(day, zone, ev)
 									const endsAfter = eventEndsAfterDay(day, zone, ev)
-									let textOption
-									if (isAllDayEvent(ev) || (startsBefore && endsAfter)) {
-										textOption = EventTextTimeOption.ALL_DAY
-									} else if (startsBefore && !endsAfter) {
-										textOption = EventTextTimeOption.END_TIME
-									} else if (!startsBefore && endsAfter) {
-										textOption = EventTextTimeOption.START_TIME
-									} else {
-										textOption = EventTextTimeOption.START_END_TIME
-									}
 
 									return m(".darker-hover.mb-s", {key: ev._id}, m(CalendarEventBubble, {
-										text: getEventText(ev, textOption),
-										secondLineText: ev.location,
+										text: ev.summary,
+										secondLineText: formatEventTime(ev) + (ev.location ? ", " + ev.location : ""),
 										color: getEventColor(ev, attrs.groupColors),
 										hasAlarm: !startsBefore && hasAlarmsForTheUser(logins.getUserController().user, ev),
 										click: (domEvent) => attrs.onEventClicked(ev, domEvent),

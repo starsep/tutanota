@@ -24,6 +24,37 @@ const defaultBubbleHeight = size.calendar_line_height
 export class CalendarEventBubble implements MComponent<CalendarEventBubbleAttrs> {
 
 	view({attrs}: Vnode<CalendarEventBubbleAttrs>): Children {
+		const lineHeightPx = px(defaultBubbleHeight)
+
+		let content
+		const doesFit2Lines = attrs.height && attrs.height >= defaultBubbleHeight * 2
+		if (doesFit2Lines) {
+			content = [
+				m("", [
+					m("", {
+						style: {
+							lineHeight: lineHeightPx,
+						}
+					}, [attrs.text]),
+					attrs.secondLineText
+						? m("", {
+							style: {
+								lineHeight: lineHeightPx,
+							}
+						}, [attrs.secondLineText])
+						: null
+				])
+			]
+		} else {
+			content = [
+				m("", {
+					style: {
+						lineHeight: lineHeightPx,
+					}
+				}, [attrs.text, attrs.secondLineText || ""])
+			]
+		}
+
 		return m(".calendar-event.small.overflow-hidden.flex.fade-in"
 			+ (attrs.noBorderLeft ? ".event-continues-left" : "")
 			+ (attrs.noBorderRight ? ".event-continues-right" : "")
@@ -31,8 +62,8 @@ export class CalendarEventBubble implements MComponent<CalendarEventBubbleAttrs>
 				style: {
 					background: "#" + attrs.color,
 					color: colorForBg("#" + attrs.color),
-					minHeight: px(defaultBubbleHeight),
-					height: px(attrs.height ? attrs.height : defaultBubbleHeight),
+					minHeight: lineHeightPx,
+					height: px(attrs.height ? Math.max(attrs.height, 0) : defaultBubbleHeight),
 					"padding-top": px(attrs.verticalPadding || 0),
 				},
 				onclick: (e) => {
@@ -47,10 +78,7 @@ export class CalendarEventBubble implements MComponent<CalendarEventBubbleAttrs>
 						class: "icon-small",
 					})
 					: null,
-				m(".flex.col", [
-					m("", {style: {lineHeight: px(defaultBubbleHeight),}}, attrs.text),
-					attrs.secondLineText ? m("", attrs.secondLineText) : null
-				])
+				m(".flex.col", content)
 			])
 	}
 

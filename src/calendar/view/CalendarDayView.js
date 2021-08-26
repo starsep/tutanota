@@ -3,7 +3,6 @@
 import m from "mithril"
 import {formatTime} from "../../misc/Formatter"
 import {incrementDate, isSameDay} from "../../api/common/utils/DateUtils"
-import {EventTextTimeOption} from "../../api/common/TutanotaConstants"
 import {ContinuingCalendarEventBubble} from "./ContinuingCalendarEventBubble"
 import {isAllDayEvent} from "../../api/common/utils/CommonCalendarUtils"
 import {
@@ -122,7 +121,7 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 						endsAfter: eventEndsAfterDay(date, zone, e),
 						color: getEventColor(e, vnode.attrs.groupColors),
 						onEventClicked: (_, domEvent) => vnode.attrs.onEventClicked(e, domEvent),
-						showTime: EventTextTimeOption.NO_TIME,
+						showTime: false,
 						user: logins.getUserController().user,
 					})
 				})),
@@ -132,7 +131,7 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 					endsAfter: eventEndsAfterDay(date, zone, e),
 					color: getEventColor(e, vnode.attrs.groupColors),
 					onEventClicked: (_, domEvent) => vnode.attrs.onEventClicked(e, domEvent),
-					showTime: EventTextTimeOption.START_TIME,
+					showTime: true,
 					user: logins.getUserController().user
 				}))),
 				mainPageEvents.allDayEvents.length > 0 || mainPageEvents.longEvents.length > 0

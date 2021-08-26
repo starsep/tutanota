@@ -4,7 +4,7 @@
 import m from "mithril"
 import {px, size} from "../../gui/size"
 import type {WeekStartEnum} from "../../api/common/TutanotaConstants"
-import {EventTextTimeOption, WeekStart} from "../../api/common/TutanotaConstants"
+import {WeekStart} from "../../api/common/TutanotaConstants"
 import {CalendarEventBubble} from "./CalendarEventBubble"
 import type {CalendarDay} from "../date/CalendarUtils"
 import {
@@ -297,7 +297,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 			startsBefore: startsBeforeWeek,
 			endsAfter: endsAfterWeek,
 			color: getEventColor(event, attrs.groupColors),
-			showTime: styles.isDesktopLayout() && !isAllDayEvent(event) ? EventTextTimeOption.START_TIME : EventTextTimeOption.NO_TIME,
+			showTime: styles.isDesktopLayout() && !isAllDayEvent(event),
 			user: logins.getUserController().user,
 			onEventClicked: (e, domEvent) => {
 				attrs.onEventClicked(event, domEvent)
