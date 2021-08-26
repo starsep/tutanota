@@ -10,6 +10,8 @@ import {CalendarEventBubble} from "./CalendarEventBubble"
 import {neverNull} from "../../api/common/utils/Utils"
 import type {CalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
 import {logins} from "../../api/main/LoginController"
+import {EventTextTimeOption} from "../../api/common/TutanotaConstants"
+import {isAllDayEvent} from "../../api/common/utils/CommonCalendarUtils"
 
 export type Attrs = {
 	onEventClicked: (event: CalendarEvent, domEvent: Event) => mixed,
@@ -110,7 +112,7 @@ export class CalendarDayEventsView implements MComponent<Attrs> {
 			},
 		}, m(CalendarEventBubble, {
 			text: ev.summary,
-			secondLineText: formatEventTime(ev),
+			secondLineText: !isAllDayEvent(ev) ? formatEventTime(ev, EventTextTimeOption.START_END_TIME) : null,
 			color: getEventColor(ev, attrs.groupColors),
 			click: (domEvent) => attrs.onEventClicked(ev, domEvent),
 			height: height - padding,

@@ -3,7 +3,7 @@ import {getStartOfDay, incrementDate, isSameDay, isSameDayOfDate, isValidDate} f
 import type {
 	AlarmIntervalEnum,
 	CalendarAttendeeStatusEnum,
-	EndTypeEnum,
+	EndTypeEnum, EventTextTimeOptionEnum,
 	RepeatPeriodEnum,
 	WeekStartEnum
 } from "../../api/common/TutanotaConstants"
@@ -11,7 +11,7 @@ import {
 	AlarmInterval,
 	CalendarAttendeeStatus,
 	defaultCalendarColor,
-	EndType,
+	EndType, EventTextTimeOption,
 	getWeekStart,
 	RepeatPeriod,
 	WeekStart
@@ -289,11 +289,19 @@ function collidesWith(a: CalendarEvent, b: CalendarEvent): boolean {
 }
 
 
-export function formatEventTime(event: CalendarEvent): string {
-	if (isAllDayEvent(event)) {
-		return lang.get("allDay_label")
+export function formatEventTime(event: CalendarEvent, showTime: EventTextTimeOptionEnum): string {
+	switch (showTime) {
+		case EventTextTimeOption.START_TIME:
+			return formatTime(event.startTime)
+		case EventTextTimeOption.END_TIME:
+			return ` - ${formatTime(event.endTime)}`
+		case EventTextTimeOption.START_END_TIME:
+			return `${formatTime(event.startTime)} - ${formatTime(event.endTime)}`
+		case EventTextTimeOption.ALL_DAY:
+			return lang.get("allDay_label")
+		default:
+			throw new Error("Unknown time option " + showTime)
 	}
-	return formatTime(event.startTime) + "-" + formatTime(event.endTime)
 }
 
 export function expandEvent(ev: CalendarEvent, columnIndex: number, columns: Array<Array<CalendarEvent>>): number {

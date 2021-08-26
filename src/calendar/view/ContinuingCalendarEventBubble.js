@@ -32,7 +32,7 @@ export class ContinuingCalendarEventBubble implements MComponent<ContinuingCalen
 				: null,
 			m(".flex-grow.overflow-hidden",
 				m(CalendarEventBubble, {
-					text: (attrs.showTime ? formatTime(attrs.event.startTime) + " " : '') + attrs.event.summary,
+					text: (attrs.showTime ? `${formatTime(attrs.event.startTime)} ` : "") + attrs.event.summary,
 					color: attrs.color,
 					click: (e) => attrs.onEventClicked(attrs.event, e),
 					noBorderLeft: attrs.startsBefore,
