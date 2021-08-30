@@ -1,7 +1,7 @@
 //@flow
 
 import m from "mithril"
-import {formatTime} from "../../misc/Formatter"
+import {formatDateWithWeekdayAndYear, formatTime} from "../../misc/Formatter"
 import {incrementDate, isSameDay} from "../../api/common/utils/DateUtils"
 import {ContinuingCalendarEventBubble} from "./ContinuingCalendarEventBubble"
 import {isAllDayEvent} from "../../api/common/utils/CommonCalendarUtils"
@@ -11,7 +11,8 @@ import {
 	eventEndsAfterDay,
 	eventStartsBefore,
 	getEventColor,
-	getTimeZone
+	getTimeZone,
+	getWeekNumber
 } from "../date/CalendarUtils"
 import {neverNull} from "../../api/common/utils/Utils"
 import {CalendarDayEventsView, calendarDayTimes} from "./CalendarDayEventsView"
@@ -20,6 +21,11 @@ import {px, size} from "../../gui/size"
 import {PageView} from "../../gui/base/PageView"
 import type {CalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
 import {logins} from "../../api/main/LoginController"
+import {lang} from "../../misc/LanguageViewModel"
+import {getWeekStart, WeekStart} from "../../api/common/TutanotaConstants"
+import {Icon} from "../../gui/base/Icon"
+import {Icons} from "../../gui/base/icons/Icons"
+import {styles} from "../../gui/styles"
 
 export type CalendarDayViewAttrs = {
 	selectedDate: Date,
@@ -97,6 +103,10 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 		const {shortEvents, longEvents, allDayEvents} = thisPageEvents
 		const mainPageEventsCount = mainPageEvents.allDayEvents.length + mainPageEvents.longEvents.length
 		const zone = getTimeZone()
+		const startOfTheWeek = getWeekStart(logins.getUserController().userSettingsGroupRoot)
+		
+		const title = formatDateWithWeekdayAndYear(vnode.attrs.selectedDate)
+
 		return m(".fill-absolute.flex.col.calendar-column-border.margin-are-inset-lr", {
 			oncreate: () => {
 				this._redrawIntervalId = setInterval(m.redraw, 1000 * 60)
@@ -108,12 +118,27 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 				}
 			},
 		}, [
-			m(".calendar-long-events-header.flex-fixed" + (mainPageEventsCount === 0 ? "" : ".mt-s"), {
+			m(".calendar-long-events-header.mt-s.flex-fixed", {
 				style: {
-					height: px(mainPageEventsCount === 0 ? 0 : (mainPageEventsCount * CALENDAR_EVENT_HEIGHT + 9)),
-
+					height: px(45 + mainPageEventsCount * CALENDAR_EVENT_HEIGHT + 8),
 				},
 			}, [
+
+				m(".pr-l.flex.row.items-center", [
+					m("button.calendar-switch-button", {
+						onclick: () => {} // vnode.attrs.onDateSelected(yesterday),
+					}, m(Icon, {icon: Icons.ArrowDropLeft, class: "icon-large switch-month-button"})),
+					m("button.calendar-switch-button", {
+						onclick: () => {} //vnode.attrs.onChangeWeek(tomorrow),
+					}, m(Icon, {icon: Icons.ArrowDropRight, class: "icon-large switch-month-button"})),
+					m("h1", title),
+					// According to ISO 8601, weeks always start on Monday. Week numbering systems for
+					// weeks that do not start on Monday are not strictly defined, so we only display
+					// a week number if the user's client is configured to start weeks on Monday
+					startOfTheWeek === WeekStart.MONDAY
+						? m(".ml-m.content-message-bg.small", {style: {padding: "2px 4px"}}, lang.get("weekNumber_label", {"{week}": String(getWeekNumber(vnode.attrs.selectedDate))}))
+						: null,
+				]),
 				m(".calendar-hour-margin.pr-l", allDayEvents.map(e => {
 					return m(ContinuingCalendarEventBubble, {
 						event: e,
@@ -162,7 +187,7 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 					},
 					m(".pt.pl-s.pr-s.center.small", {
 						style: {
-							width: px(size.calendar_hour_width_mobile),
+							width: !styles.isDesktopLayout() ? px(size.calendar_hour_width_mobile) : px(size.calendar_hour_width),
 							height: px(size.calendar_hour_height),
 							'border-right': `2px solid ${theme.content_border}`,
 						},

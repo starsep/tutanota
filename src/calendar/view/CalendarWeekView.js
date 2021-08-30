@@ -93,8 +93,6 @@ export class CalendarWeekView implements MComponent<Attrs> {
 
 		const marginForWeekEvents = mainWeek.eventsForWeek.size === 0 ? 0 : 6
 
-		const {startOfTheWeek} = logins.getUserController().userSettingsGroupRoot
-
 		return m(".fill-absolute.flex.col.calendar-column-border.margin-are-inset-lr", {
 			oncreate: () => {
 				this._redrawIntervalId = setInterval(m.redraw, 1000 * 60)
@@ -120,7 +118,7 @@ export class CalendarWeekView implements MComponent<Attrs> {
 					// According to ISO 8601, weeks always start on Monday. Week numbering systems for
 					// weeks that do not start on Monday are not strictly defined, so we only display
 					// a week number if the user's client is configured to start weeks on Monday
-					startOfTheWeek === WeekStart.MONDAY
+					attrs.startOfTheWeek === WeekStart.MONDAY
 						? m(".ml-m.content-message-bg.small", {style: {padding: "2px 4px"}}, lang.get("weekNumber_label", {"{week}": String(getWeekNumber(firstDate))}))
 						: null
 				]),
