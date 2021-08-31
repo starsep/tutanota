@@ -33,10 +33,12 @@ import {lang} from "../../misc/LanguageViewModel"
 import {PageView} from "../../gui/base/PageView"
 import type {CalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
 import {logins} from "../../api/main/LoginController"
-import {SELECTED_DATE_INDICATOR_THICKNESS} from "./CalendarView"
+import type {CalendarViewTypeEnum} from "./CalendarView"
+import {CalendarViewType, SELECTED_DATE_INDICATOR_THICKNESS} from "./CalendarView"
 
 export type Attrs = {
 	selectedDate: Date,
+	onDateSelected: (date: Date, calendarViewTypeToShow: CalendarViewTypeEnum) => mixed,
 	eventsForDays: Map<number, Array<CalendarEvent>>,
 	onNewEvent: (date: ?Date) => mixed,
 	onEventClicked: (event: CalendarEvent, domEvent: Event) => mixed,
@@ -217,9 +219,10 @@ export class CalendarWeekView implements MComponent<Attrs> {
 				m(".flex.flex-grow", thisWeek.week.map((weekday, i) => {
 						const events = thisWeek.eventsPerDay[i]
 						const newEventHandler = (hours, minutes) => {
-							const eventDate = new Date(weekday)
-							eventDate.setHours(hours, minutes)
-							attrs.onNewEvent(eventDate)
+							const newDate = new Date(weekday)
+							newDate.setHours(hours, minutes)
+							attrs.onNewEvent(newDate)
+							attrs.onDateSelected(new Date(weekday), CalendarViewType.WEEK)
 						}
 						return m(".flex-grow.calendar-column-border", {
 							style: {

@@ -251,8 +251,8 @@ export class CalendarView implements CurrentView {
 								this._newEvent(date)
 							},
 							selectedDate: this.selectedDate(),
-							onDateSelected: (date) => {
-								this._setUrl(CalendarViewType.DAY, date)
+							onDateSelected: (date, viewType) => {
+								this._setUrl(viewType, date)
 							},
 							startOfTheWeek: downcast(logins.getUserController().userSettingsGroupRoot.startOfTheWeek),
 							groupColors,
@@ -393,9 +393,9 @@ export class CalendarView implements CurrentView {
 				const dateTime = DateTime.fromJSDate(this.selectedDate())
 				let newDate
 				if (next) {
-					newDate = dateTime.plus({month: 1}).toJSDate()
+					newDate = dateTime.plus({month: 1}).startOf("month").toJSDate()
 				} else {
-					newDate = dateTime.minus({month: 1}).toJSDate()
+					newDate = dateTime.minus({month: 1}).startOf("month").toJSDate()
 				}
 				this.selectedDate(newDate)
 				m.redraw()
@@ -406,9 +406,9 @@ export class CalendarView implements CurrentView {
 				const dateTime = DateTime.fromJSDate(this.selectedDate())
 				let newDate
 				if (next) {
-					newDate = dateTime.plus({week: 1}).toJSDate()
+					newDate = dateTime.plus({week: 1}).startOf("week").toJSDate()
 				} else {
-					newDate = dateTime.minus({week: 1}).toJSDate()
+					newDate = dateTime.minus({week: 1}).startOf("week").toJSDate()
 				}
 				this.selectedDate(newDate)
 				m.redraw()

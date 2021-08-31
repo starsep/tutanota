@@ -83,9 +83,11 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 	view({attrs}: Vnode<CalendarMonthAttrs>): Children {
 		const previousMonthDate = new Date(attrs.selectedDate)
 		previousMonthDate.setMonth(previousMonthDate.getMonth() - 1)
+		previousMonthDate.setDate(1)
 
 		const nextMonthDate = new Date(attrs.selectedDate)
 		nextMonthDate.setMonth(nextMonthDate.getMonth() + 1)
+		nextMonthDate.setDate(1)
 		return m(PageView, {
 			previousPage: {
 				key: previousMonthDate.getTime(),
@@ -167,17 +169,14 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 				key: d.date.getTime(),
 				onclick: (e) => {
 					if (styles.isDesktopLayout()) {
-						if (isSameDay(d.date, attrs.selectedDate)) {
-							const newDate = new Date(d.date)
-							let hour = new Date().getHours()
-							if (hour < 23) {
-								hour++
-							}
-							newDate.setHours(hour, 0)
-							attrs.onNewEvent(newDate)
-						} else {
-							attrs.onDateSelected(new Date(d.date), CalendarViewType.MONTH)
+						const newDate = new Date(d.date)
+						let hour = new Date().getHours()
+						if (hour < 23) {
+							hour++
 						}
+						newDate.setHours(hour, 0)
+						attrs.onNewEvent(newDate)
+						attrs.onDateSelected(new Date(d.date), CalendarViewType.MONTH)
 					} else {
 						attrs.onDateSelected(new Date(d.date), CalendarViewType.DAY)
 					}
