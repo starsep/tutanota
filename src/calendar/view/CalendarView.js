@@ -242,6 +242,7 @@ export class CalendarView implements CurrentView {
 							},
 							groupColors,
 							hiddenCalendars: this._hiddenCalendars,
+							startOfTheWeek: downcast(logins.getUserController().userSettingsGroupRoot.startOfTheWeek),
 						})
 					case CalendarViewType.WEEK:
 						return m(CalendarWeekView, {

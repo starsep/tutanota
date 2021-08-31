@@ -1,7 +1,7 @@
 //@flow
 
 import m from "mithril"
-import {formatDateWithWeekdayAndYear, formatTime} from "../../misc/Formatter"
+import {formatDateWithWeekdayAndYearLong, formatTime} from "../../misc/Formatter"
 import {incrementDate, isSameDay} from "../../api/common/utils/DateUtils"
 import {ContinuingCalendarEventBubble} from "./ContinuingCalendarEventBubble"
 import {isAllDayEvent} from "../../api/common/utils/CommonCalendarUtils"
@@ -22,7 +22,8 @@ import {PageView} from "../../gui/base/PageView"
 import type {CalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
 import {logins} from "../../api/main/LoginController"
 import {lang} from "../../misc/LanguageViewModel"
-import {getWeekStart, WeekStart} from "../../api/common/TutanotaConstants"
+import type {WeekStartEnum} from "../../api/common/TutanotaConstants"
+import {WeekStart} from "../../api/common/TutanotaConstants"
 import {Icon} from "../../gui/base/Icon"
 import {Icons} from "../../gui/base/icons/Icons"
 import {styles} from "../../gui/styles"
@@ -35,6 +36,7 @@ export type CalendarDayViewAttrs = {
 	onEventClicked: (event: CalendarEvent, domEvent: Event) => mixed,
 	groupColors: {[Id]: string},
 	hiddenCalendars: Set<Id>,
+	startOfTheWeek: WeekStartEnum
 }
 
 type PageEvents = {shortEvents: Array<CalendarEvent>, longEvents: Array<CalendarEvent>, allDayEvents: Array<CalendarEvent>}
@@ -100,12 +102,6 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 	}
 
 	_renderDay(vnode: Vnode<CalendarDayViewAttrs>, date: Date, thisPageEvents: PageEvents, mainPageEvents: PageEvents): Children {
-		const {shortEvents, longEvents, allDayEvents} = thisPageEvents
-		const mainPageEventsCount = mainPageEvents.allDayEvents.length + mainPageEvents.longEvents.length
-		const zone = getTimeZone()
-		const startOfTheWeek = getWeekStart(logins.getUserController().userSettingsGroupRoot)
-		
-		const title = formatDateWithWeekdayAndYear(vnode.attrs.selectedDate)
 
 		return m(".fill-absolute.flex.col.calendar-column-border.margin-are-inset-lr", {
 			oncreate: () => {
@@ -118,51 +114,9 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 				}
 			},
 		}, [
-			m(".calendar-long-events-header.mt-s.flex-fixed", {
-				style: {
-					height: px(45 + mainPageEventsCount * CALENDAR_EVENT_HEIGHT + 8),
-				},
-			}, [
-
-				m(".pr-l.flex.row.items-center", [
-					m("button.calendar-switch-button", {
-						onclick: () => {} // vnode.attrs.onDateSelected(yesterday),
-					}, m(Icon, {icon: Icons.ArrowDropLeft, class: "icon-large switch-month-button"})),
-					m("button.calendar-switch-button", {
-						onclick: () => {} //vnode.attrs.onChangeWeek(tomorrow),
-					}, m(Icon, {icon: Icons.ArrowDropRight, class: "icon-large switch-month-button"})),
-					m("h1", title),
-					// According to ISO 8601, weeks always start on Monday. Week numbering systems for
-					// weeks that do not start on Monday are not strictly defined, so we only display
-					// a week number if the user's client is configured to start weeks on Monday
-					startOfTheWeek === WeekStart.MONDAY
-						? m(".ml-m.content-message-bg.small", {style: {padding: "2px 4px"}}, lang.get("weekNumber_label", {"{week}": String(getWeekNumber(vnode.attrs.selectedDate))}))
-						: null,
-				]),
-				m(".calendar-hour-margin.pr-l", allDayEvents.map(e => {
-					return m(ContinuingCalendarEventBubble, {
-						event: e,
-						startsBefore: eventStartsBefore(date, zone, e),
-						endsAfter: eventEndsAfterDay(date, zone, e),
-						color: getEventColor(e, vnode.attrs.groupColors),
-						onEventClicked: (_, domEvent) => vnode.attrs.onEventClicked(e, domEvent),
-						showTime: false,
-						user: logins.getUserController().user,
-					})
-				})),
-				m(".calendar-hour-margin.pr-l", longEvents.map(e => m(ContinuingCalendarEventBubble, {
-					event: e,
-					startsBefore: eventStartsBefore(date, zone, e),
-					endsAfter: eventEndsAfterDay(date, zone, e),
-					color: getEventColor(e, vnode.attrs.groupColors),
-					onEventClicked: (_, domEvent) => vnode.attrs.onEventClicked(e, domEvent),
-					showTime: true,
-					user: logins.getUserController().user
-				}))),
-				mainPageEvents.allDayEvents.length > 0 || mainPageEvents.longEvents.length > 0
-					? m(".mt-s")
-					: null
-			]),
+			styles.isDesktopLayout()
+				? this.renderHeaderDesktop(vnode.attrs, date, thisPageEvents, mainPageEvents)
+				: this.renderHeaderMobile(vnode.attrs, date, thisPageEvents, mainPageEvents),
 			m(".flex.scroll", {
 				oncreate: (vnode) => {
 					vnode.dom.scrollTop = this._scrollPosition
@@ -197,7 +151,7 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 				m(".flex-grow", m(CalendarDayEventsView, {
 					onEventClicked: vnode.attrs.onEventClicked,
 					groupColors: vnode.attrs.groupColors,
-					events: shortEvents.filter((ev) => !vnode.attrs.hiddenCalendars.has(neverNull(ev._ownerGroup))),
+					events: thisPageEvents.shortEvents.filter((ev) => !vnode.attrs.hiddenCalendars.has(neverNull(ev._ownerGroup))),
 					displayTimeIndicator: isSameDay(new Date(), vnode.attrs.selectedDate),
 					onTimePressed: (hours, minutes) => {
 						const newDate = new Date(vnode.attrs.selectedDate)
@@ -213,5 +167,79 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 			]),
 
 		])
+	}
+
+	renderHeaderDesktop(attrs: CalendarDayViewAttrs, date: Date, thisPageEvents: PageEvents, mainPageEvents: PageEvents): Children {
+		const {selectedDate, startOfTheWeek} = attrs
+		const mainPageEventsCount = mainPageEvents.allDayEvents.length + mainPageEvents.longEvents.length
+		const title = formatDateWithWeekdayAndYearLong(selectedDate)
+
+		return m(".calendar-long-events-header.mt-s.flex-fixed", {
+			style: {
+				height: px(45 + mainPageEventsCount * CALENDAR_EVENT_HEIGHT + 8),
+			},
+		}, [
+			m(".pr-l.flex.row.items-center", [
+				m("button.calendar-switch-button", {
+					onclick: () => {} // vnode.attrs.onDateSelected(yesterday),
+				}, m(Icon, {icon: Icons.ArrowDropLeft, class: "icon-large switch-month-button"})),
+				m("button.calendar-switch-button", {
+					onclick: () => {} //vnode.attrs.onChangeWeek(tomorrow),
+				}, m(Icon, {icon: Icons.ArrowDropRight, class: "icon-large switch-month-button"})),
+				m("h1", title),
+				// According to ISO 8601, weeks always start on Monday. Week numbering systems for
+				// weeks that do not start on Monday are not strictly defined, so we only display
+				// a week number if the user's client is configured to start weeks on Monday
+				startOfTheWeek === WeekStart.MONDAY
+					? m(".ml-m.content-message-bg.small", {
+						style: {
+							padding: "2px 4px"
+						}
+					}, lang.get("weekNumber_label", {"{week}": String(getWeekNumber(selectedDate))}))
+					: null,
+			]),
+			this.renderHeaderEvents(attrs, date, thisPageEvents, mainPageEvents)
+		])
+	}
+
+	renderHeaderMobile(attrs: CalendarDayViewAttrs, date: Date, thisPageEvents: PageEvents, mainPageEvents: PageEvents): Children {
+		const mainPageEventsCount = mainPageEvents.allDayEvents.length + mainPageEvents.longEvents.length
+		return m(".calendar-long-events-header.mt-s.flex-fixed", {
+			style: {
+				height: px(mainPageEventsCount === 0 ? 0 : (mainPageEventsCount * CALENDAR_EVENT_HEIGHT + 9)),
+			},
+		}, this.renderHeaderEvents(attrs, date, thisPageEvents, mainPageEvents))
+	}
+
+	renderHeaderEvents({groupColors, onEventClicked}: CalendarDayViewAttrs, date: Date, {
+		allDayEvents,
+		longEvents
+	}: PageEvents, mainPageEvents: PageEvents): Children {
+		const zone = getTimeZone()
+		return [
+			m(".calendar-hour-margin.pr-l", allDayEvents.map(e => {
+				return m(ContinuingCalendarEventBubble, {
+					event: e,
+					startsBefore: eventStartsBefore(date, zone, e),
+					endsAfter: eventEndsAfterDay(date, zone, e),
+					color: getEventColor(e, groupColors),
+					onEventClicked: (_, domEvent) => onEventClicked(e, domEvent),
+					showTime: false,
+					user: logins.getUserController().user,
+				})
+			})),
+			m(".calendar-hour-margin.pr-l", longEvents.map(e => m(ContinuingCalendarEventBubble, {
+				event: e,
+				startsBefore: eventStartsBefore(date, zone, e),
+				endsAfter: eventEndsAfterDay(date, zone, e),
+				color: getEventColor(e, groupColors),
+				onEventClicked: (_, domEvent) => onEventClicked(e, domEvent),
+				showTime: true,
+				user: logins.getUserController().user
+			}))),
+			mainPageEvents.allDayEvents.length > 0 || mainPageEvents.longEvents.length > 0
+				? m(".mt-s")
+				: null
+		]
 	}
 }
