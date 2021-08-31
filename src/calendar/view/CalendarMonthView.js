@@ -37,7 +37,7 @@ import {PageView} from "../../gui/base/PageView"
 import type {CalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
 import {logins} from "../../api/main/LoginController"
 import type {CalendarViewTypeEnum} from "./CalendarView"
-import {CalendarViewType} from "./CalendarView"
+import {CalendarViewType, SELECTED_DATE_INDICATOR_THICKNESS} from "./CalendarView"
 
 type CalendarMonthAttrs = {
 	selectedDate: Date,
@@ -186,12 +186,12 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 			},
 			[
 				m("", {
-						style: {
-							height: px(4),
-							background: isSelectedDate ? theme.content_accent : "none"
-						},
-					})
-					,
+					style: {
+						height: px(SELECTED_DATE_INDICATOR_THICKNESS),
+						background: isSelectedDate ? theme.content_accent : "none"
+					},
+				})
+				,
 				m(".calendar-day-indicator.calendar-day-number" + getDateIndicator(d.date, null, today), {
 					onclick: e => {
 						attrs.onDateSelected(new Date(d.date), CalendarViewType.DAY)

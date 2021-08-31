@@ -176,7 +176,7 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 
 		return m(".calendar-long-events-header.mt-s.flex-fixed", {
 			style: {
-				height: px(45 + mainPageEventsCount * CALENDAR_EVENT_HEIGHT + 8),
+				height: px(45 + mainPageEventsCount * CALENDAR_EVENT_HEIGHT + size.vpad_small),
 			},
 		}, [
 			m(".pr-l.flex.row.items-center", [

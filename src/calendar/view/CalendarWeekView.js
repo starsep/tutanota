@@ -1,7 +1,7 @@
 // @flow
 
 import m from "mithril"
-import {getStartOfDay, incrementDate} from "../../api/common/utils/DateUtils"
+import {getStartOfDay, incrementDate, isSameDay} from "../../api/common/utils/DateUtils"
 import {styles} from "../../gui/styles"
 import {formatTime} from "../../misc/Formatter"
 import {
@@ -33,6 +33,7 @@ import {lang} from "../../misc/LanguageViewModel"
 import {PageView} from "../../gui/base/PageView"
 import type {CalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
 import {logins} from "../../api/main/LoginController"
+import {SELECTED_DATE_INDICATOR_THICKNESS} from "./CalendarView"
 
 export type Attrs = {
 	selectedDate: Date,
@@ -105,7 +106,9 @@ export class CalendarWeekView implements MComponent<Attrs> {
 			},
 		}, [
 			m(".calendar-long-events-header.mt-s.flex-fixed", {
-				style: {height: px(45 + 24 + mainWeek.longEvents.maxColumns * CALENDAR_EVENT_HEIGHT + marginForWeekEvents + 8)},
+				style: {
+					height: px(45 + 24 + mainWeek.longEvents.maxColumns * CALENDAR_EVENT_HEIGHT + marginForWeekEvents + size.vpad_small)
+				},
 			}, [
 				m(".pr-l.flex.row.items-center", [
 					m("button.calendar-switch-button", {
@@ -123,18 +126,19 @@ export class CalendarWeekView implements MComponent<Attrs> {
 						: null
 				]),
 				m(".flex", {
-					style: {
-						"margin": `0 0 ${px(marginForWeekEvents)} ${px(size.calendar_hour_width)}`
-					}
-				}, thisWeek.week.map((wd) => m(".flex.center-horizontally.flex-grow.center.b.", [
-					m(".calendar-day-indicator", {
-						style: {"margin-right": "4px"},
-					}, lang.formats.weekdayShort.format(wd) + " "),
-					m(".calendar-day-indicator.calendar-day-number" + (todayTimestamp === wd.getTime() ? ".date-current" : ""), {
-						style: {margin: "0"}
-					}, wd.getDate())
-				]))),
-				m(".calendar-hour-margin.flex.row", {
+						style: {
+							"margin": `0 0 ${px(marginForWeekEvents)} ${px(size.calendar_hour_width)}`
+						}
+					},
+					thisWeek.week.map((wd) => m(".flex.center-horizontally.flex-grow.center.b.", [
+						m(".calendar-day-indicator", {
+							style: {"margin-right": "4px"},
+						}, lang.formats.weekdayShort.format(wd) + " "),
+						m(".calendar-day-indicator.calendar-day-number" + (todayTimestamp === wd.getTime() ? ".date-current" : ""), {
+							style: {margin: "0"}
+						}, wd.getDate())
+					]))),
+				m(".calendar-hour-margin.flex.col", {
 						oncreate: (vnode) => {
 							if (mainWeek === thisWeek) {
 								this._longEventsDom = vnode.dom
@@ -147,10 +151,38 @@ export class CalendarWeekView implements MComponent<Attrs> {
 							}
 						}
 					},
-					m(".rel.mb-s",
-						{style: {height: px(mainWeek.longEvents.maxColumns * CALENDAR_EVENT_HEIGHT), width: "100%"}},
-						thisWeek.longEvents.children
-					))
+					[
+						m(".rel",
+							{style: {height: px(mainWeek.longEvents.maxColumns * CALENDAR_EVENT_HEIGHT), width: "100%"}},
+							thisWeek.longEvents.children
+						),
+
+						// Selected Day Indicator Row
+						m(".rel.flex", {
+								style: {
+									height: px(size.vpad_small),
+									width: "100%",
+								}
+							},
+							thisWeek.week.map(day => m(".flex-grow.flex.col", {
+									style: {
+										justifyContent: "flex-end"
+									}
+								}, [
+									m("", {
+										style: {
+											background: isSameDay(attrs.selectedDate, day)
+												? theme.content_accent
+												: "none",
+											width: "100%",
+											height: px(SELECTED_DATE_INDICATOR_THICKNESS)
+										}
+									}),
+								])
+							)
+						)
+					]
+				),
 			]),
 			m("", {
 				style: {'border-bottom': `1px solid ${theme.content_border}`,}
@@ -257,7 +289,6 @@ export class CalendarWeekView implements MComponent<Attrs> {
 					const endsAfter = eventEndsAfterDay(lastDayOfWeek, zone, event)
 					const left = startsBefore ? 0 : dayOfStartDateInWeek * dayWidth
 					const right = endsAfter ? 0 : (6 - dayOfEndDateInWeek) * dayWidth
-						+ calendarEventMargin
 					return m(".abs", {
 						style: {
 							top: px(c * CALENDAR_EVENT_HEIGHT),

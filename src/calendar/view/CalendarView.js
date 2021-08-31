@@ -91,7 +91,7 @@ import {ProgrammingError} from "../../api/common/error/ProgrammingError"
 import {ofClass, promiseMap} from "../../api/common/utils/PromiseUtils"
 import {createMoreActionButtonAttrs} from "../../gui/base/GuiUtils"
 
-
+export const SELECTED_DATE_INDICATOR_THICKNESS = 4
 export const LIMIT_PAST_EVENTS_YEARS = 100
 
 export type CalendarInfo = {
