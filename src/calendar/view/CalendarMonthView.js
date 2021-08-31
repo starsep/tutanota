@@ -5,7 +5,6 @@ import m from "mithril"
 import {px, size} from "../../gui/size"
 import type {WeekStartEnum} from "../../api/common/TutanotaConstants"
 import {WeekStart} from "../../api/common/TutanotaConstants"
-import {CalendarEventBubble} from "./CalendarEventBubble"
 import type {CalendarDay} from "../date/CalendarUtils"
 import {
 	CALENDAR_EVENT_HEIGHT,
@@ -184,19 +183,22 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 				},
 			},
 			[
-				m("", {
-					style: {
-						height: px(SELECTED_DATE_INDICATOR_THICKNESS),
-						background: isSelectedDate ? theme.content_accent : "none"
+				m(".calendar-day-top", {
+						onclick: e => {
+							attrs.onDateSelected(new Date(d.date), CalendarViewType.DAY)
+							e.stopPropagation()
+						}
 					},
-				})
-				,
-				m(".calendar-day-indicator.calendar-day-number" + getDateIndicator(d.date, null, today), {
-					onclick: e => {
-						attrs.onDateSelected(new Date(d.date), CalendarViewType.DAY)
-						e.stopPropagation()
-					}
-				}, String(d.day)),
+					[
+						m("", {
+							style: {
+								height: px(SELECTED_DATE_INDICATOR_THICKNESS),
+								backgroundColor: isSelectedDate ? theme.content_accent : "none"
+							},
+						}),
+						m(".calendar-day-indicator.calendar-day-number" + getDateIndicator(d.date, null, today), String(d.day))
+					]
+				),
 				// According to ISO 8601, weeks always start on Monday. Week numbering systems for
 				// weeks that do not start on Monday are not strictly defined, so we only display
 				// a week number if the user's client is configured to start weeks on Monday
@@ -265,16 +267,14 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 							bottom: px(1),
 							height: px(CALENDAR_EVENT_HEIGHT),
 							left: px(weekday * dayWidth + eventMargin),
-							width: px(dayWidth - 2 - eventMargin * 2)
+							width: px(dayWidth - 2 - eventMargin * 2),
+							pointerEvents: "none"
 						}
-					}, m(CalendarEventBubble, {
-						text: "+" + moreEventsCount,
-						color: isPadding ? theme.list_bg.substring(1) : theme.content_bg.substring(1),
-						click: () => {
-							attrs.onDateSelected(day.date, CalendarViewType.DAY)
-						},
-						hasAlarm: false,
-					}))
+					}, m("", {
+						style: {
+							'font-weight': '600'
+						}
+					}, "+" + moreEventsCount))
 				} else {
 					return null
 				}

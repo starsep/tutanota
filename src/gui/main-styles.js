@@ -1106,14 +1106,12 @@ styles.registerStyle('main', () => {
 			'background': theme.list_alternate_bg
 		},
 
-		'.calendar-day-number:hover': {
+		'.calendar-day-top:hover': {
 			opacity: 0.7,
 		},
 
-		'.calendar-day:hover .calendar-day-number': {
-			background: theme.content_message_bg,
-			'border-radius': '50%',
-			color: theme.navigation_button_icon,
+		'.calendar-day:hover .calendar-day-top': {
+			'background-color': theme.button_bubble_bg
 		},
 
 
