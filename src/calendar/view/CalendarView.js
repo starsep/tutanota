@@ -217,9 +217,8 @@ export class CalendarView implements CurrentView {
 								this._newEvent(date)
 							},
 							selectedDate: this.selectedDate(),
-							onDateSelected: (date) => {
-								const viewType = CalendarViewType.DAY
-								this._setUrl(viewType, date)
+							onDateSelected: (date, calendarViewType) => {
+								this._setUrl(calendarViewType, date)
 							},
 							onChangeMonth: (next) => this._viewPeriod(next),
 							amPmFormat: logins.getUserController().userSettingsGroupRoot.timeFormat === TimeFormat.TWELVE_HOURS,

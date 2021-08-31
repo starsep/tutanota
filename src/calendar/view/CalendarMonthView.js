@@ -22,7 +22,7 @@ import {
 	getWeekNumber,
 	layOutEvents
 } from "../date/CalendarUtils"
-import {incrementDate} from "../../api/common/utils/DateUtils"
+import {incrementDate, isSameDay} from "../../api/common/utils/DateUtils"
 import {lastThrow} from "../../api/common/utils/ArrayUtils"
 import {theme} from "../../gui/theme"
 import {ContinuingCalendarEventBubble} from "./ContinuingCalendarEventBubble"
@@ -36,10 +36,12 @@ import {Icons} from "../../gui/base/icons/Icons"
 import {PageView} from "../../gui/base/PageView"
 import type {CalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
 import {logins} from "../../api/main/LoginController"
+import type {CalendarViewTypeEnum} from "./CalendarView"
+import {CalendarViewType} from "./CalendarView"
 
 type CalendarMonthAttrs = {
 	selectedDate: Date,
-	onDateSelected: (date: Date) => mixed,
+	onDateSelected: (date: Date, calendarViewTypeToShow: CalendarViewTypeEnum) => mixed,
 	eventsForDays: Map<number, Array<CalendarEvent>>,
 	onNewEvent: (date: ?Date) => mixed,
 	onEventClicked: (calendarEvent: CalendarEvent, clickEvent: Event) => mixed,
@@ -158,28 +160,41 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 	}
 
 	_renderDay(attrs: CalendarMonthAttrs, d: CalendarDay, today: Date, weekDayNumber: number): Children {
+		const {selectedDate} = attrs
+		const isSelectedDate = isSameDay(selectedDate, d.date)
 		return m(".calendar-day.calendar-column-border.flex-grow.rel.overflow-hidden.fill-absolute"
 			+ (d.paddingDay ? ".calendar-alternate-background" : ""), {
 				key: d.date.getTime(),
 				onclick: (e) => {
 					if (styles.isDesktopLayout()) {
-						const newDate = new Date(d.date)
-						let hour = new Date().getHours()
-						if (hour < 23) {
-							hour++
+						if (isSameDay(d.date, attrs.selectedDate)) {
+							const newDate = new Date(d.date)
+							let hour = new Date().getHours()
+							if (hour < 23) {
+								hour++
+							}
+							newDate.setHours(hour, 0)
+							attrs.onNewEvent(newDate)
+						} else {
+							attrs.onDateSelected(new Date(d.date), CalendarViewType.MONTH)
 						}
-						newDate.setHours(hour, 0)
-						attrs.onNewEvent(newDate)
 					} else {
-						attrs.onDateSelected(new Date(d.date))
+						attrs.onDateSelected(new Date(d.date), CalendarViewType.DAY)
 					}
 					e.preventDefault()
-				}
+				},
 			},
 			[
+				m("", {
+						style: {
+							height: px(4),
+							background: isSelectedDate ? theme.content_accent : "none"
+						},
+					})
+					,
 				m(".calendar-day-indicator.calendar-day-number" + getDateIndicator(d.date, null, today), {
 					onclick: e => {
-						attrs.onDateSelected(new Date(d.date))
+						attrs.onDateSelected(new Date(d.date), CalendarViewType.DAY)
 						e.stopPropagation()
 					}
 				}, String(d.day)),
@@ -257,7 +272,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 						text: "+" + moreEventsCount,
 						color: isPadding ? theme.list_bg.substring(1) : theme.content_bg.substring(1),
 						click: () => {
-							attrs.onDateSelected(day.date)
+							attrs.onDateSelected(day.date, CalendarViewType.DAY)
 						},
 						hasAlarm: false,
 					}))
