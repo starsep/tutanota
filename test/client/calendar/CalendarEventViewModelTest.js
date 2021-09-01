@@ -63,6 +63,7 @@ import {TypeRef} from "../../../src/api/common/utils/TypeRef"
 import {Request} from "../../../src/api/common/WorkerProtocol"
 import {SysService} from "../../../src/api/entities/sys/Services"
 import {delay} from "../../../src/api/common/utils/PromiseUtils"
+import {Time} from "../../../src/api/common/utils/Time"
 
 const calendarGroupId = "0"
 const now = new Date(2020, 4, 25, 13, 40)
@@ -695,7 +696,7 @@ o.spec("CalendarEventViewModel", function () {
 			})
 			const userController = makeUserController([], AccountType.PREMIUM, "", true)
 			const viewModel = init({userController, calendars, existingEvent, calendarModel, distributor})
-			viewModel.onStartDateSelected(new Date(2020, 4, 3))
+			viewModel.setStartDate(new Date(2020, 4, 3))
 			askForUpdates = o.spy(() => Promise.resolve("yes"))
 
 			o(await viewModel.saveAndSend({askForUpdates, askInsecurePassword, showProgress})).equals(true)
@@ -736,7 +737,7 @@ o.spec("CalendarEventViewModel", function () {
 			})
 			const userController = makeUserController([], AccountType.PREMIUM, "", true)
 			const viewModel = init({userController, calendars, existingEvent, calendarModel, distributor})
-			viewModel.onStartDateSelected(new Date(2020, 4, 3))
+			viewModel.setStartDate(new Date(2020, 4, 3))
 			viewModel.addGuest(newGuest)
 			viewModel.removeAttendee(toRemoveGuest)
 			askForUpdates = o.spy(() => Promise.resolve("yes"))
@@ -777,7 +778,7 @@ o.spec("CalendarEventViewModel", function () {
 			await updateModel.bccRecipients()[0].resolveContactPromise
 			updateModel.bccRecipients()[0].contact = createContact({presharedPassword: "123"})
 			updateModel.onMailChanged(true)
-			viewModel.onStartDateSelected(new Date(2020, 4, 3))
+			viewModel.setStartDate(new Date(2020, 4, 3))
 			askForUpdates = o.spy(() => Promise.resolve("yes"))
 			askInsecurePassword = o.spy(async () => true)
 
@@ -813,7 +814,7 @@ o.spec("CalendarEventViewModel", function () {
 			const viewModel = init({userController, calendars, existingEvent, calendarModel, distributor})
 			updateModel.bccRecipients()[0].type = RecipientInfoType.EXTERNAL
 			viewModel.updatePassword(viewModel.attendees()[0], "123")
-			viewModel.onStartDateSelected(new Date(2020, 4, 3))
+			viewModel.setStartDate(new Date(2020, 4, 3))
 			askForUpdates = o.spy(() => Promise.resolve("yes"))
 			askInsecurePassword = o.spy(async () => false)
 
@@ -858,7 +859,7 @@ o.spec("CalendarEventViewModel", function () {
 			})
 			const userController = makeUserController([], AccountType.PREMIUM, "", true)
 			const viewModel = init({userController, calendars, existingEvent, calendarModel, distributor})
-			viewModel.onStartDateSelected(new Date(2020, 4, 3))
+			viewModel.setStartDate(new Date(2020, 4, 3))
 			viewModel.addGuest(newGuest)
 			viewModel.removeAttendee(toRemoveGuest)
 			askForUpdates = o.spy(() => Promise.resolve("no"))
@@ -902,7 +903,7 @@ o.spec("CalendarEventViewModel", function () {
 			})
 			const userController = makeUserController([], AccountType.PREMIUM, "", true)
 			const viewModel = init({userController, calendars, existingEvent, calendarModel, distributor})
-			viewModel.onStartDateSelected(new Date(2020, 4, 3))
+			viewModel.setStartDate(new Date(2020, 4, 3))
 			viewModel.addGuest(newGuest)
 			viewModel.removeAttendee(toRemoveGuest)
 			askForUpdates = o.spy(() => Promise.resolve("cancel"))
@@ -941,7 +942,7 @@ o.spec("CalendarEventViewModel", function () {
 			})
 			const userController = makeUserController([], AccountType.PREMIUM, "", true)
 			const viewModel = init({userController, calendars, existingEvent, calendarModel, distributor})
-			viewModel.onStartDateSelected(new Date(2020, 4, 3))
+			viewModel.setStartDate(new Date(2020, 4, 3))
 			viewModel.removeAttendee(toRemoveGuest)
 			askForUpdates = o.spy(async () => "yes")
 
@@ -1224,7 +1225,7 @@ o.spec("CalendarEventViewModel", function () {
 				endTime: DateTime.fromObject({year: 2020, month: 6, day: 9, hour: 15, zone}).toJSDate(),
 			})
 			const viewModel = init({calendars, existingEvent})
-			viewModel.onStartDateSelected(DateTime.fromObject({year: 2020, month: 6, day: 10, zone}).toJSDate())
+			viewModel.setStartDate(DateTime.fromObject({year: 2020, month: 6, day: 10, zone}).toJSDate())
 
 			// No hours because it's a "date", not "time" field.
 			o(viewModel.endDate.toISOString())
@@ -1239,7 +1240,7 @@ o.spec("CalendarEventViewModel", function () {
 				endTime: DateTime.fromObject({year: 2020, month: 6, day: 9, hour: 15, zone}).toJSDate(),
 			})
 			const viewModel = init({calendars, existingEvent})
-			viewModel.onStartDateSelected(DateTime.fromObject({year: 2020, month: 6, day: 6, zone}).toJSDate())
+			viewModel.setStartDate(DateTime.fromObject({year: 2020, month: 6, day: 6, zone}).toJSDate())
 
 			// No hours because it's a "date", not "time" field.
 			o(viewModel.endDate.toISOString())
@@ -1256,12 +1257,12 @@ o.spec("CalendarEventViewModel", function () {
 				endTime: DateTime.fromObject({year: 2020, month: 6, day: 8, hour: 15, zone}).toJSDate(),
 			})
 			const viewModel = init({calendars, existingEvent})
-			viewModel.onStartTimeSelected("14:00")
+			viewModel.setStartTime(new Time(14, 0))
 
 			// No hours because it's a "date", not "time" field.
 			o(viewModel.endDate.toISOString())
 				.equals(DateTime.fromObject({year: 2020, month: 6, day: 8, zone}).toJSDate().toISOString())
-			o(viewModel.endTime).equals("16:00")
+			o(viewModel.endTime.to24HourString()).equals("16:00")
 		})
 
 		o("time adjusted backward", async function () {
@@ -1271,7 +1272,7 @@ o.spec("CalendarEventViewModel", function () {
 				endTime: DateTime.fromObject({year: 2020, month: 6, day: 8, hour: 15, zone}).toJSDate(),
 			})
 			const viewModel = init({calendars, existingEvent})
-			viewModel.onStartTimeSelected("12:00")
+			viewModel.setStartTime(new Time(12, 0))
 
 			// No hours because it's a "date", not "time" field.
 			o(viewModel.endDate.toISOString())
@@ -1286,12 +1287,12 @@ o.spec("CalendarEventViewModel", function () {
 				endTime: DateTime.fromObject({year: 2020, month: 6, day: 9, hour: 15, zone}).toJSDate(),
 			})
 			const viewModel = init({calendars, existingEvent})
-			viewModel.onStartTimeSelected("12:00")
+			viewModel.setStartTime(new Time(12, 0))
 
 			// No hours because it's a "date", not "time" field.
 			o(viewModel.endDate.toISOString())
 				.equals(DateTime.fromObject({year: 2020, month: 6, day: 9, zone}).toJSDate().toISOString())
-			o(viewModel.endTime).equals("15:00")
+			o(viewModel.endTime.to24HourString()).equals("15:00")
 		})
 	})
 

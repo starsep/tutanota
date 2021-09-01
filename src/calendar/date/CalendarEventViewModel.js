@@ -34,7 +34,6 @@ import {
 	incrementByRepeatPeriod,
 	incrementSequence,
 	prepareCalendarDescription,
-	timeString,
 	timeStringInZone
 } from "./CalendarUtils"
 import {assertNotNull, clone, downcast, isCustomizationEnabledForCustomer, neverNull, noOp} from "../../api/common/utils/Utils"
@@ -60,10 +59,9 @@ import {logins} from "../../api/main/LoginController"
 import {locator} from "../../api/main/MainLocator"
 import {EntityClient} from "../../api/common/EntityClient"
 import {BusinessFeatureRequiredError} from "../../api/main/BusinessFeatureRequiredError"
-import {timeStringFromParts} from "../../misc/Formatter"
 import {hasCapabilityOnGroup} from "../../sharing/GroupUtils"
 import {ofClass, promiseMap} from "../../api/common/utils/PromiseUtils"
-import {parseTime} from "../../misc/parsing/TimeParser";
+import {Time} from "../../api/common/utils/Time"
 
 const TIMESTAMP_ZERO_YEAR = 1970
 
@@ -104,8 +102,8 @@ export class CalendarEventViewModel {
 	+selectedCalendar: Stream<?CalendarInfo>;
 	startDate: Date;
 	endDate: Date;
-	startTime: string;
-	endTime: string;
+	startTime: Time;
+	endTime: Time;
 	+allDay: Stream<boolean>;
 	repeat: ?RepeatData
 	calendars: Map<Id, CalendarInfo>
@@ -116,7 +114,7 @@ export class CalendarEventViewModel {
 	note: string;
 	+amPmFormat: boolean;
 	+existingEvent: ?CalendarEvent
-	_oldStartTime: ?string;
+	_oldStartTime: ?Time;
 	+_zone: string;
 	// We keep alarms read-only so that view can diff just array and not all elements
 	alarms: $ReadOnlyArray<AlarmInfo>;
@@ -231,9 +229,11 @@ export class CalendarEventViewModel {
 			// We don't care about passed time here, just use current one as default
 			this._setDefaultTimes()
 		} else {
-			this.startTime = timeStringInZone(getEventStart(existingEvent, this._zone), this.amPmFormat, this._zone)
-			this.endTime = timeStringInZone(getEventEnd(existingEvent, this._zone), this.amPmFormat, this._zone)
-			this.endDate = getStartOfDayWithZone(getEventEnd(existingEvent, this._zone), this._zone)
+			const startDate = getEventStart(existingEvent, this._zone)
+			const endDate = getEventEnd(existingEvent, this._zone)
+			this.startTime = Time.fromDate(startDate)
+			this.endTime = Time.fromDate(endDate)
+			this.endDate = getStartOfDayWithZone(endDate, this._zone)
 		}
 
 		if (existingEvent.repeatRule) {
@@ -367,8 +367,8 @@ export class CalendarEventViewModel {
 	_setDefaultTimes(date: Date = getNextHalfHour()) {
 		const endTimeDate = new Date(date)
 		endTimeDate.setMinutes(endTimeDate.getMinutes() + 30)
-		this.startTime = timeString(date, this.amPmFormat)
-		this.endTime = timeString(endTimeDate, this.amPmFormat)
+		this.startTime = Time.fromDate(date)
+		this.endTime = Time.fromDate(endTimeDate)
 	}
 
 	_ownPossibleOrganizers(mailboxDetail: MailboxDetail, userController: IUserController): Array<EncryptedMailAddress> {
@@ -379,7 +379,7 @@ export class CalendarEventViewModel {
 		return this.attendees().find(a => this._ownMailAddresses.includes(a.address.address))
 	}
 
-	onStartTimeSelected(value: string) {
+	setStartTime(value: Time) {
 		this._oldStartTime = this.startTime
 		this.startTime = value
 		if (this.startDate.getTime() === this.endDate.getTime()) {
@@ -387,7 +387,7 @@ export class CalendarEventViewModel {
 		}
 	}
 
-	onEndTimeSelected(value: string) {
+	setEndTime(value: Time) {
 		this.endTime = value
 	}
 
@@ -452,25 +452,22 @@ export class CalendarEventViewModel {
 	}
 
 	_adjustEndTime() {
-		const parsedOldStartTime = this._oldStartTime && parseTime(this._oldStartTime)
-		const parsedStartTime = parseTime(this.startTime)
-		const parsedEndTime = parseTime(this.endTime)
-		if (!parsedStartTime || !parsedEndTime || !parsedOldStartTime) {
+		if (!this._oldStartTime) {
 			return
 		}
-		const endTotalMinutes = parsedEndTime.hours * 60 + parsedEndTime.minutes
-		const startTotalMinutes = parsedStartTime.hours * 60 + parsedStartTime.minutes
-		const diff = Math.abs(endTotalMinutes - parsedOldStartTime.hours * 60 - parsedOldStartTime.minutes)
+		const endTotalMinutes = this.endTime.hours * 60 + this.endTime.minutes
+		const startTotalMinutes = this.startTime.hours * 60 + this.startTime.minutes
+		const diff = Math.abs(endTotalMinutes - this._oldStartTime.hours * 60 - this._oldStartTime.minutes)
 		const newEndTotalMinutes = startTotalMinutes + diff
 		let newEndHours = Math.floor(newEndTotalMinutes / 60)
 		if (newEndHours > 23) {
 			newEndHours = 23
 		}
 		const newEndMinutes = newEndTotalMinutes % 60
-		this.endTime = timeStringFromParts(newEndHours, newEndMinutes, this.amPmFormat)
+		this.endTime = new Time(newEndHours, newEndMinutes)
 	}
 
-	onStartDateSelected(date: ?Date) {
+	setStartDate(date: ?Date) {
 		if (date) {
 			// The custom ID for events is derived from the unix timestamp, and sorting the negative ids is a challenge we decided not to
 			// tackle because it is a rare case.
@@ -487,7 +484,7 @@ export class CalendarEventViewModel {
 		}
 	}
 
-	onEndDateSelected(date: ?Date) {
+	setEndDate(date: ?Date) {
 		if (date) {
 			this.endDate = date
 		}
@@ -959,19 +956,14 @@ export class CalendarEventViewModel {
 			startDate = getAllDayDateUTCFromZone(startDate, this._zone)
 			endDate = getAllDayDateUTCFromZone(getStartOfNextDayWithZone(endDate, this._zone), this._zone)
 		} else {
-			const parsedStartTime = parseTime(this.startTime)
-			const parsedEndTime = parseTime(this.endTime)
-			if (!parsedStartTime || !parsedEndTime) {
-				throw new UserError("timeFormatInvalid_msg")
-			}
 			startDate = DateTime.fromJSDate(startDate, {zone: this._zone})
-			                    .set({hour: parsedStartTime.hours, minute: parsedStartTime.minutes})
+			                    .set({hour: this.startTime.hours, minute: this.startTime.minutes})
 			                    .toJSDate()
 
 			// End date is never actually included in the event. For the whole day event the next day
 			// is the boundary. For the timed one the end time is the boundary.
 			endDate = DateTime.fromJSDate(endDate, {zone: this._zone})
-			                  .set({hour: parsedEndTime.hours, minute: parsedEndTime.minutes})
+			                  .set({hour: this.endTime.hours, minute: this.endTime.minutes})
 			                  .toJSDate()
 		}
 

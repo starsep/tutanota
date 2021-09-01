@@ -7,30 +7,32 @@ import {theme} from "./theme"
 import {client} from "../misc/ClientDetector"
 import {Keys} from "../api/common/TutanotaConstants"
 import {timeStringFromParts} from "../misc/Formatter"
-import {parseTime} from "../misc/parsing/TimeParser";
+import { Time} from "../api/common/utils/Time"
+import {neverNull} from "../api/common/utils/Utils"
+import {parseTime} from "../misc/parsing/TimeParser"
 
 export type Attrs = {
-	value: string,
-	onselected: (string) => mixed,
+	value: Time,
+	onselected: (Time) => mixed,
 	amPmFormat: boolean,
 	disabled?: boolean
 }
 
 export class TimePicker implements MComponent<Attrs> {
-	_values: $ReadOnlyArray<string>
+	_values: $ReadOnlyArray<Time>
 	_focused: boolean;
 	_previousSelectedIndex: number;
 	_selectedIndex: number;
-	_oldValue: string;
-	_value: Stream<string>;
+	_oldValue: Time;
+	_value: Stream<?Time>;
 
 	constructor({attrs}: Vnode<Attrs>) {
 		this._focused = false
-		this._value = stream("")
+		this._value = stream(null)
 		const times = []
 		for (let hour = 0; hour < 24; hour++) {
 			for (let minute = 0; minute < 60; minute += 30) {
-				times.push(timeStringFromParts(hour, minute, attrs.amPmFormat))
+				times.push(new Time(hour, minute))
 			}
 		}
 		this._values = times
@@ -38,28 +40,29 @@ export class TimePicker implements MComponent<Attrs> {
 
 
 	view({attrs}: Vnode<Attrs>): Children {
-		const parsedTime = parseTime(attrs.value)
-		if (parsedTime) {
-			this._previousSelectedIndex = this._selectedIndex
-			this._selectedIndex = this._values.indexOf(timeStringFromParts(parsedTime.hours, parsedTime.minutes, attrs.amPmFormat))
-			if (!this._focused) {
-				this._value(attrs.value)
-			}
+		this._previousSelectedIndex = this._selectedIndex
+		this._selectedIndex = this._values.findIndex(time => time.equals(attrs.value))
+		if (!this._focused) {
+			this._value(attrs.value)
 		}
+
 		if (client.isMobileDevice()) {
-			if (this._oldValue !== attrs.value) {
+			if (!this._oldValue.equals(attrs.value)) {
 				this._onSelected(attrs)
 			}
 			this._oldValue = attrs.value
-			this._value(parsedTime && timeStringFromParts(parsedTime.hours, parsedTime.minutes, false) || "")
+			this._value(attrs.value)
 			return m(TextFieldN, {
 				label: "emptyString_msg",
 				// input[type=time] wants value in 24h format, no matter what is actually displayed. Otherwise it will be empty.
-				value: this._value,
+				value: () => this._value()?.to24HourString() ?? "",
 				type: TextFieldType.Time,
 				oninput: (value) => {
-					this._value(value)
-					attrs.onselected(value)
+					const parsedTime = parseTime(value)
+					this._value(parsedTime)
+					if (parsedTime) {
+						attrs.onselected(parsedTime)
+					}
 				},
 				disabled: attrs.disabled
 			})
@@ -68,7 +71,7 @@ export class TimePicker implements MComponent<Attrs> {
 		return [
 			m(TextFieldN, {
 				label: "emptyString_msg",
-				value: this._value,
+				value: () => this._value()?.toString(attrs.amPmFormat) ?? "",
 				disabled: attrs.disabled,
 				onfocus: (dom, input) => {
 					this._focused = true
@@ -100,18 +103,18 @@ export class TimePicker implements MComponent<Attrs> {
 						overflow: "auto",
 
 					},
-				}, this._values.map((t, i) => m("pr-s.pl-s.darker-hover", {
-					key: t,
+				}, this._values.map((time, idx) => m("pr-s.pl-s.darker-hover", {
+					key: idx,
 					style: {
-						"background-color": this._selectedIndex === i ? theme.list_bg : theme.list_alternate_bg,
+						"background-color": this._selectedIndex === idx ? theme.list_bg : theme.list_alternate_bg,
 						flex: "1 0 auto",
 						"line-height": "44px"
 					},
 					onmousedown: () => {
 						this._focused = false
-						attrs.onselected(t)
+						attrs.onselected(time)
 					},
-				}, t)))
+				}, time.toString(attrs.amPmFormat))))
 				: null,
 		]
 
@@ -119,10 +122,7 @@ export class TimePicker implements MComponent<Attrs> {
 
 	_onSelected(attrs: Attrs) {
 		this._focused = false
-		const value = this._value()
-		const parsedTime = parseTime(value)
-		const timeString = parsedTime && timeStringFromParts(parsedTime.hours, parsedTime.minutes, attrs.amPmFormat)
-		attrs.onselected(timeString || value)
+		attrs.onselected(neverNull(this._value()))
 	}
 
 	_setScrollTop(attrs: Attrs, vnode: VnodeDOM<Attrs>) {

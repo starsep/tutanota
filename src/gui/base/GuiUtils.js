@@ -156,3 +156,10 @@ export function ifAllowedTutanotaLinks(linkId: InfoLink, render: (string) => Chi
 	}
 	return null
 }
+
+export function entityDraggedHandler(id: Id | IdTuple): DragEventHandler {
+	const idString = id instanceof Array
+		? id.join(",")
+		: id
+	return ev => ev.dataTransfer?.setData("text", idString)
+}

@@ -6,7 +6,6 @@ import {
 	getCalendarMonth,
 	getStartOfWeek,
 	getWeekNumber,
-
 	prepareCalendarDescription
 } from "../../../src/calendar/date/CalendarUtils"
 import {lang} from "../../../src/misc/LanguageViewModel"
@@ -19,7 +18,7 @@ import {timeStringFromParts} from "../../../src/misc/Formatter";
 import {DateTime} from "luxon"
 import {getAllDayDateUTC} from "../../../src/api/common/utils/CommonCalendarUtils"
 import {hasCapabilityOnGroup} from "../../../src/sharing/GroupUtils"
-import {parseTime} from "../../../src/misc/parsing/TimeParser";
+import {parseTime} from "../../../src/misc/parsing/TimeParser"
 
 o.spec("calendar utils tests", function () {
 	o.spec("getCalendarMonth", function () {
