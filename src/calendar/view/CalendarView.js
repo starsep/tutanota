@@ -79,7 +79,7 @@ import {CalendarEventPopup} from "./CalendarEventPopup"
 import {NoopProgressMonitor} from "../../api/common/utils/ProgressMonitor"
 import {getListId, isSameId, listIdPart} from "../../api/common/utils/EntityUtils";
 import {exportCalendar, showCalendarImportDialog} from "../export/CalendarImporterDialog"
-import {createCalendarEventViewModel} from "../date/CalendarEventViewModel"
+import {CalendarEventViewModel, createCalendarEventViewModel} from "../date/CalendarEventViewModel"
 import {showNotAvailableForFreeDialog} from "../../misc/SubscriptionDialogs"
 import {getSharedGroupName, hasCapabilityOnGroup, loadGroupMembers} from "../../sharing/GroupUtils"
 import {showGroupSharingDialog} from "../../sharing/view/GroupSharingDialog"
@@ -225,6 +225,18 @@ export class CalendarView implements CurrentView {
 							startOfTheWeek: downcast(logins.getUserController().userSettingsGroupRoot.startOfTheWeek),
 							groupColors,
 							hiddenCalendars: this._hiddenCalendars,
+							onEventMoved: async (id, newDate) => {
+								const event = await locator.entityClient.load(CalendarEventTypeRef, id)
+								/*
+								 We have an event
+								 we will update it's start and end time
+								 we will create a calendareventviewmodel
+								 set the new date
+								 save and send
+								 */
+
+								const viewModel = await this._createCalendarEventViewModel(event)
+							}
 						})
 					case CalendarViewType.DAY:
 						return m(CalendarDayView, {
@@ -642,31 +654,35 @@ export class CalendarView implements CurrentView {
 		}, "save_action")
 	}
 
-	_onEventSelected(calendarEvent: CalendarEvent, domEvent: Event) {
+	async _onEventSelected(calendarEvent: CalendarEvent, domEvent: Event) {
 		const domTarget = domEvent.currentTarget
 		if (domTarget == null || !(domTarget instanceof HTMLElement)) {
 			return
 		}
-		Promise.all([
+
+		const [viewModel, htmlSanitizer] = await Promise.all([
+			this._createCalendarEventViewModel(calendarEvent),
+			this._htmlSanitizer
+		])
+
+		new CalendarEventPopup(
+			viewModel,
+			calendarEvent,
+			calendarInfos,
+			mailboxDetails,
+			domTarget.getBoundingClientRect(),
+			() => this._editEvent(calendarEvent),
+			htmlSanitizer,
+		).show()
+	}
+
+	async _createCalendarEventViewModel(event: CalendarEvent): Promise<CalendarEventViewModel> {
+		const [mailboxDetails, calendarInfos] = await Promise.all([
 			locator.mailModel.getUserMailboxDetails(),
 			this._calendarInfos.getAsync(),
-			this._htmlSanitizer
-		]).then(([mailboxDetails, calendarInfos, htmlSanitizer]) => {
-				return createCalendarEventViewModel(getEventStart(calendarEvent, getTimeZone()), calendarInfos, mailboxDetails,
-					calendarEvent, null, true
-				).then((viewModel) => {
-					new CalendarEventPopup(
-						viewModel,
-						calendarEvent,
-						calendarInfos,
-						mailboxDetails,
-						domTarget.getBoundingClientRect(),
-						() => this._editEvent(calendarEvent),
-						htmlSanitizer,
-					).show()
-				})
-			}
-		)
+		])
+		return createCalendarEventViewModel(getEventStart(event, getTimeZone()), calendarInfos, mailboxDetails,
+			event, null, true)
 	}
 
 	_editEvent(event: CalendarEvent) {

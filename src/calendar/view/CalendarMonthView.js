@@ -37,6 +37,7 @@ import type {CalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
 import {logins} from "../../api/main/LoginController"
 import type {CalendarViewTypeEnum} from "./CalendarView"
 import {CalendarViewType, SELECTED_DATE_INDICATOR_THICKNESS} from "./CalendarView"
+import {getLetId} from "../../api/common/utils/EntityUtils"
 
 type CalendarMonthAttrs = {
 	selectedDate: Date,
@@ -49,6 +50,7 @@ type CalendarMonthAttrs = {
 	startOfTheWeek: WeekStartEnum,
 	groupColors: {[Id]: string},
 	hiddenCalendars: Set<Id>,
+	onEventMoved: (IdTuple, Date) => *
 }
 
 type SimplePosRect = {top: number, left: number, right: number}
@@ -181,6 +183,17 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 					}
 					e.preventDefault()
 				},
+				ondragover: ev => {
+					ev.preventDefault()
+				},
+				ondrop: ev => {
+					const transferredId = ev.dataTransfer?.getData("text")
+					if (transferredId != null) {
+						ev.preventDefault()
+						const eventId = transferredId.split(",")
+						attrs.onEventMoved(eventId, d.date)
+					}
+				}
 			},
 			[
 				m(".calendar-day-top", {
@@ -316,6 +329,9 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 			onEventClicked: (e, domEvent) => {
 				attrs.onEventClicked(event, domEvent)
 			},
+			onDragStart: (dragEvent) => {
+				dragEvent.dataTransfer?.setData("text", getLetId(event).join(","))
+			}
 		})
 	}
 

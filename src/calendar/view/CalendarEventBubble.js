@@ -5,6 +5,7 @@ import {colorForBg} from "../date/CalendarUtils"
 import {px, size} from "../../gui/size"
 import {Icon} from "../../gui/base/Icon"
 import {Icons} from "../../gui/base/icons/Icons"
+import {noOp} from "../../api/common/utils/Utils"
 
 export type CalendarEventBubbleAttrs = {
 	text: string,
@@ -15,7 +16,8 @@ export type CalendarEventBubbleAttrs = {
 	height?: number,
 	noBorderRight?: boolean,
 	noBorderLeft?: boolean,
-	verticalPadding?: number
+	verticalPadding?: number,
+	onDragStart?: DragEvent => *
 }
 
 
@@ -39,7 +41,9 @@ export class CalendarEventBubble implements MComponent<CalendarEventBubbleAttrs>
 				onclick: (e) => {
 					e.stopPropagation()
 					attrs.click(e, e.target)
-				}
+				},
+				draggable: true,
+				ondragstart: attrs.onDragStart ?? noOp
 			}, [
 				attrs.hasAlarm
 					? m(Icon, {
