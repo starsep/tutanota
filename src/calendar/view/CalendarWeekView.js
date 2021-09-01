@@ -46,6 +46,7 @@ export type Attrs = {
 	hiddenCalendars: Set<Id>,
 	startOfTheWeek: WeekStartEnum,
 	onChangeWeek: (next: boolean) => mixed,
+	onEventMoved: (IdTuple, Date) => *
 }
 
 type WeekEvents = {
@@ -237,6 +238,19 @@ export class CalendarWeekView implements MComponent<Attrs> {
 							displayTimeIndicator: weekday.getTime() === todayTimestamp,
 							onTimePressed: newEventHandler,
 							onTimeContextPressed: newEventHandler,
+							onEventMoved: (id, newDate) => {
+								// calendar day events view doesn't keep track of which day it is rendering, so we need to replace that info
+								const actualDate = new Date(
+									weekday.getFullYear(),
+									weekday.getMonth(),
+									weekday.getDate(),
+									newDate.getHours(),
+									newDate.getMinutes(),
+									newDate.getSeconds()
+								)
+
+								attrs.onEventMoved(id, actualDate)
+							}
 						}))
 					})
 				)
@@ -308,7 +322,7 @@ export class CalendarWeekView implements MComponent<Attrs> {
 						color: getEventColor(event, attrs.groupColors),
 						onEventClicked: attrs.onEventClicked,
 						showTime: !isAllDayEvent(event),
-						user: logins.getUserController().user
+						user: logins.getUserController().user,
 					}))
 				}))
 		}, true)

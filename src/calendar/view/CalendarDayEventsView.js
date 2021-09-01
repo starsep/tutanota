@@ -7,11 +7,13 @@ import {DAY_IN_MILLIS} from "../../api/common/utils/DateUtils"
 import {numberRange} from "../../api/common/utils/ArrayUtils"
 import {expandEvent, formatEventTime, getEventColor, getTimeZone, hasAlarmsForTheUser, layOutEvents} from "../date/CalendarUtils"
 import {CalendarEventBubble} from "./CalendarEventBubble"
-import {neverNull} from "../../api/common/utils/Utils"
+import {downcast, neverNull} from "../../api/common/utils/Utils"
 import type {CalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
 import {logins} from "../../api/main/LoginController"
 import {EventTextTimeOption} from "../../api/common/TutanotaConstants"
 import {isAllDayEvent} from "../../api/common/utils/CommonCalendarUtils"
+import {entityDraggedHandler} from "../../gui/base/GuiUtils"
+import {getLetId} from "../../api/common/utils/EntityUtils"
 
 export type Attrs = {
 	onEventClicked: (event: CalendarEvent, domEvent: Event) => mixed,
@@ -20,6 +22,7 @@ export type Attrs = {
 	displayTimeIndicator: boolean,
 	onTimePressed: (hours: number, minutes: number) => mixed,
 	onTimeContextPressed: (hours: number, minutes: number) => mixed,
+	onEventMoved: (IdTuple, Date) => *
 }
 
 export const calendarDayTimes: Array<Date> = numberRange(0, 23).map((n) => {
@@ -49,6 +52,15 @@ export class CalendarDayEventsView implements MComponent<Attrs> {
 						oncontextmenu: (e) => {
 							vnode.attrs.onTimeContextPressed(n.getHours(), n.getMinutes())
 							e.preventDefault()
+						},
+						ondragover: ev => ev.preventDefault(),
+						ondrop: (ev: DragEvent) => {
+							const id = ev.dataTransfer?.getData("text")
+							console.log(n)
+							if (!!id) {
+								ev.preventDefault()
+								vnode.attrs.onEventMoved(downcast(id.split(",")), n)
+							}
 						}
 					},
 					)
@@ -117,7 +129,8 @@ export class CalendarDayEventsView implements MComponent<Attrs> {
 			click: (domEvent) => attrs.onEventClicked(ev, domEvent),
 			height: height - padding,
 			hasAlarm: hasAlarmsForTheUser(logins.getUserController().user, ev),
-			verticalPadding: padding
+			verticalPadding: padding,
+			onDragStart: entityDraggedHandler(getLetId(ev))
 		}))
 	}
 

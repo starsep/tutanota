@@ -14,7 +14,7 @@ import {
 	getTimeZone,
 	getWeekNumber
 } from "../date/CalendarUtils"
-import {neverNull} from "../../api/common/utils/Utils"
+import {neverNull, noOp} from "../../api/common/utils/Utils"
 import {CalendarDayEventsView, calendarDayTimes} from "./CalendarDayEventsView"
 import {theme} from "../../gui/theme"
 import {px, size} from "../../gui/size"
@@ -162,7 +162,8 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 						const newDate = new Date(vnode.attrs.selectedDate)
 						newDate.setHours(hours, minutes)
 						vnode.attrs.onNewEvent(newDate)
-					}
+					},
+					onEventMoved: noOp // TODO
 				})),
 			]),
 

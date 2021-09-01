@@ -43,7 +43,7 @@ import {
 	isSameEvent,
 	shouldDefaultToAmPmTimeFormat,
 } from "../date/CalendarUtils"
-import {showCalendarEventDialog} from "./CalendarEventEditDialog"
+import {askIfShouldSendCalendarUpdatesToAttendees, showCalendarEventDialog} from "./CalendarEventEditDialog"
 import {worker} from "../../api/main/WorkerClient"
 import {ButtonColors, ButtonN, ButtonType} from "../../gui/base/ButtonN"
 import {findAllAndRemove, findAndRemove, symmetricDifference} from "../../api/common/utils/ArrayUtils"
@@ -90,6 +90,9 @@ import type {HtmlSanitizer} from "../../misc/HtmlSanitizer"
 import {ProgrammingError} from "../../api/common/error/ProgrammingError"
 import {ofClass, promiseMap} from "../../api/common/utils/PromiseUtils"
 import {createMoreActionButtonAttrs} from "../../gui/base/GuiUtils"
+import {UserError} from "../../api/main/UserError"
+import {showUserError} from "../../misc/ErrorHandlerImpl"
+import {Time} from "../../api/common/utils/Time"
 
 export const SELECTED_DATE_INDICATOR_THICKNESS = 4
 export const LIMIT_PAST_EVENTS_YEARS = 100
@@ -227,25 +230,11 @@ export class CalendarView implements CurrentView {
 							hiddenCalendars: this._hiddenCalendars,
 							onEventMoved: async (id, newDate) => {
 								const event = await locator.entityClient.load(CalendarEventTypeRef, id)
-								const origStartTime = event.startTime.getTime()
-								event.startTime.setDate(newDate.getDate())
-								event.startTime.setFullYear(newDate.getFullYear())
-								event.startTime.setMonth(newDate.getMonth())
-								event.endTime = new Date(event.endTime.getTime() + (event.startTime - origStartTime))
-								/*
-								 We have an event
-								 we will update it's start and end time
-								 we will create a calendareventviewmodel
-								 set the new date
-								 save and send
-								 */
-
-								const viewModel: CalendarEventViewModel = await this._createCalendarEventViewModel(event)
-								await viewModel.saveAndSend({
-									askForUpdates: async () => "no",
-									askInsecurePassword: async () => false,
-									showProgress: noOp
-								})
+								const newDateWithOriginalTime = new Date(
+									newDate.getFullYear(), newDate.getMonth(), newDate.getDate(),
+									event.startTime.getHours(), event.startTime.getMinutes(), event.startTime.getSeconds()
+								)
+								await this._moveEvent(event, newDateWithOriginalTime)
 							}
 						})
 					case CalendarViewType.DAY:
@@ -279,7 +268,12 @@ export class CalendarView implements CurrentView {
 							startOfTheWeek: downcast(logins.getUserController().userSettingsGroupRoot.startOfTheWeek),
 							groupColors,
 							hiddenCalendars: this._hiddenCalendars,
-							onChangeWeek: (next) => this._viewPeriod(next)
+							onChangeWeek: (next) => this._viewPeriod(next),
+							onEventMoved: async (id, newDate) => {
+								console.log(newDate)
+								const event = await locator.entityClient.load(CalendarEventTypeRef, id)
+								await this._moveEvent(event, newDate)
+							}
 						})
 					case CalendarViewType.AGENDA:
 						return m(CalendarAgendaView, {
@@ -364,6 +358,17 @@ export class CalendarView implements CurrentView {
 				listener.end(true)
 			}
 		}
+	}
+
+	async _moveEvent(event: CalendarEvent, newStartDate: Date) {
+		const viewModel: CalendarEventViewModel = await this._createCalendarEventViewModel(event)
+		viewModel.setStartDate(newStartDate)
+		viewModel.setStartTime(Time.fromDate(newStartDate))
+		await viewModel.saveAndSend({
+			askForUpdates: askIfShouldSendCalendarUpdatesToAttendees,
+			askInsecurePassword: async () => true,
+			showProgress: noOp
+		}).catch(ofClass(UserError, showUserError))
 	}
 
 	_setupShortcuts(): Shortcut[] {

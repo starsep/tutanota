@@ -38,6 +38,7 @@ import {logins} from "../../api/main/LoginController"
 import type {CalendarViewTypeEnum} from "./CalendarView"
 import {CalendarViewType, SELECTED_DATE_INDICATOR_THICKNESS} from "./CalendarView"
 import {getLetId} from "../../api/common/utils/EntityUtils"
+import {entityDraggedHandler} from "../../gui/base/GuiUtils"
 
 type CalendarMonthAttrs = {
 	selectedDate: Date,
@@ -329,9 +330,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 			onEventClicked: (e, domEvent) => {
 				attrs.onEventClicked(event, domEvent)
 			},
-			onDragStart: (dragEvent) => {
-				dragEvent.dataTransfer?.setData("text", getLetId(event).join(","))
-			}
+			onDragStart: entityDraggedHandler(getLetId(event))
 		})
 	}
 
