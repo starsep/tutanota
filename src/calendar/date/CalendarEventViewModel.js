@@ -33,8 +33,7 @@ import {
 	getTimeZone,
 	incrementByRepeatPeriod,
 	incrementSequence,
-	prepareCalendarDescription,
-	timeStringInZone
+	prepareCalendarDescription
 } from "./CalendarUtils"
 import {assertNotNull, clone, downcast, isCustomizationEnabledForCustomer, neverNull, noOp} from "../../api/common/utils/Utils"
 import {generateEventElementId, isAllDayEvent} from "../../api/common/utils/CommonCalendarUtils"
@@ -214,6 +213,12 @@ export class CalendarEventViewModel {
 	getCalendars(): Map<Id, CalendarInfo> {
 
 		return this.calendars
+	}
+
+	rescheduleEvent(newStartDate: Date) {
+		this.setStartDate(newStartDate)
+		this.setStartTime(Time.fromDate(newStartDate))
+		this._adjustEndTime()
 	}
 
 	_applyValuesFromExistingEvent(existingEvent: CalendarEvent, calendars: Map<Id, CalendarInfo>): void {

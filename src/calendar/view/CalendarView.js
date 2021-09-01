@@ -360,10 +360,10 @@ export class CalendarView implements CurrentView {
 		}
 	}
 
+
 	async _moveEvent(event: CalendarEvent, newStartDate: Date) {
 		const viewModel: CalendarEventViewModel = await this._createCalendarEventViewModel(event)
-		viewModel.setStartDate(newStartDate)
-		viewModel.setStartTime(Time.fromDate(newStartDate))
+		viewModel.rescheduleEvent(newStartDate)
 		await viewModel.saveAndSend({
 			askForUpdates: askIfShouldSendCalendarUpdatesToAttendees,
 			askInsecurePassword: async () => true,
