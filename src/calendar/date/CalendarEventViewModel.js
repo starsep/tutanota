@@ -108,7 +108,7 @@ export class CalendarEventViewModel {
 	endTime: string;
 	+allDay: Stream<boolean>;
 	repeat: ?RepeatData
-	calendars: Array<CalendarInfo>
+	calendars: Map<Id, CalendarInfo>
 	+attendees: Stream<$ReadOnlyArray<Guest>>;
 	organizer: ?EncryptedMailAddress;
 	+possibleOrganizers: $ReadOnlyArray<EncryptedMailAddress>;
@@ -199,7 +199,7 @@ export class CalendarEventViewModel {
 				? [existingOrganizer].concat(this._ownPossibleOrganizers(mailboxDetail, userController))
 				: this._ownPossibleOrganizers(mailboxDetail, userController)
 
-		this.calendars = Array.from(calendars.values())
+		this.calendars = calendars
 		this.selectedCalendar = stream(this.getAvailableCalendars()[0])
 
 		if (existingEvent) {
@@ -211,6 +211,11 @@ export class CalendarEventViewModel {
 			this.endDate = getStartOfDayWithZone(date, this._zone)
 		}
 		this.updateCustomerFeatures()
+	}
+
+	getCalendars(): Map<Id, CalendarInfo> {
+
+		return this.calendars
 	}
 
 	_applyValuesFromExistingEvent(existingEvent: CalendarEvent, calendars: Map<Id, CalendarInfo>): void {
@@ -911,17 +916,18 @@ export class CalendarEventViewModel {
 
 	getAvailableCalendars(): Array<CalendarInfo> {
 		// Prevent moving the calendar to another calendar if you only have read permission or if the event has attendees.
+		const calendarArray = Array.from(this.calendars.values())
 		if (this.isReadOnlyEvent()) {
-			return this.calendars
-			           .filter((calendarInfo) => calendarInfo.group._id === assertNotNull(this.existingEvent)._ownerGroup)
+			return calendarArray
+				.filter((calendarInfo) => calendarInfo.group._id === assertNotNull(this.existingEvent)._ownerGroup)
 		} else if (this.attendees().length || this._eventType === EventType.INVITE) {
 			// We don't allow inviting in a shared calendar. If we have attendees, we cannot select a shared calendar
 			// We also don't allow accepting invites into shared calendars.
-			return this.calendars
-			           .filter((calendarInfo) => !calendarInfo.shared)
+			return calendarArray
+				.filter((calendarInfo) => !calendarInfo.shared)
 		} else {
-			return this.calendars
-			           .filter((calendarInfo) => hasCapabilityOnGroup(this._userController.user, calendarInfo.group, ShareCapability.Write))
+			return calendarArray
+				.filter((calendarInfo) => hasCapabilityOnGroup(this._userController.user, calendarInfo.group, ShareCapability.Write))
 		}
 	}
 

@@ -227,6 +227,11 @@ export class CalendarView implements CurrentView {
 							hiddenCalendars: this._hiddenCalendars,
 							onEventMoved: async (id, newDate) => {
 								const event = await locator.entityClient.load(CalendarEventTypeRef, id)
+								const origStartTime = event.startTime.getTime()
+								event.startTime.setDate(newDate.getDate())
+								event.startTime.setFullYear(newDate.getFullYear())
+								event.startTime.setMonth(newDate.getMonth())
+								event.endTime = new Date(event.endTime.getTime() + (event.startTime - origStartTime))
 								/*
 								 We have an event
 								 we will update it's start and end time
@@ -235,7 +240,12 @@ export class CalendarView implements CurrentView {
 								 save and send
 								 */
 
-								const viewModel = await this._createCalendarEventViewModel(event)
+								const viewModel: CalendarEventViewModel = await this._createCalendarEventViewModel(event)
+								await viewModel.saveAndSend({
+									askForUpdates: async () => "no",
+									askInsecurePassword: async () => false,
+									showProgress: noOp
+								})
 							}
 						})
 					case CalendarViewType.DAY:
@@ -668,8 +678,7 @@ export class CalendarView implements CurrentView {
 		new CalendarEventPopup(
 			viewModel,
 			calendarEvent,
-			calendarInfos,
-			mailboxDetails,
+			viewModel.getCalendars(),
 			domTarget.getBoundingClientRect(),
 			() => this._editEvent(calendarEvent),
 			htmlSanitizer,

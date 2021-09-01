@@ -11,7 +11,6 @@ import type {CalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
 import {Dialog} from "../../gui/base/Dialog"
 import type {CalendarInfo} from "./CalendarView"
 import {CalendarEventViewModel} from "../date/CalendarEventViewModel"
-import type {MailboxDetail} from "../../mail/model/MailModel"
 import {UserError} from "../../api/main/UserError"
 import {DROPDOWN_MARGIN, showDropdown} from "../../gui/base/DropdownN"
 import {Keys} from "../../api/common/TutanotaConstants"
@@ -29,8 +28,7 @@ export class CalendarEventPopup implements ModalComponent {
 
 	view: (Vnode<mixed>) => Children
 
-	constructor(viewModel: CalendarEventViewModel, calendarEvent: CalendarEvent, calendars: Map<Id, CalendarInfo>,
-	            mailboxDetail: MailboxDetail, eventBubbleRect: ClientRect,
+	constructor(viewModel: CalendarEventViewModel, calendarEvent: CalendarEvent, calendars: Map<Id, CalendarInfo>, eventBubbleRect: ClientRect,
 	            onEditEvent: () => mixed, htmlSanitizer: HtmlSanitizer
 	) {
 		this._calendarEvent = calendarEvent
@@ -85,7 +83,7 @@ export class CalendarEventPopup implements ModalComponent {
 					style: {
 						width: px(Math.min(window.innerWidth - DROPDOWN_MARGIN * 2, 400)), // minus margin, need to apply it now to not overflow later
 						opacity: "0", // see hack description below
-					margin: "1px" // because calendar event bubbles have 1px border, we want to align
+						margin: "1px" // because calendar event bubbles have 1px border, we want to align
 					},
 					oncreate: ({dom}) => {
 						// This is a hack to get "natural" view size but render it without opacity first and then show dropdown with inferred
