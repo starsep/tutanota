@@ -177,7 +177,9 @@ export class CalendarWeekView implements MComponent<Attrs> {
 												? theme.content_accent
 												: "none",
 											width: "100%",
-											height: px(SELECTED_DATE_INDICATOR_THICKNESS)
+											// The calendar-long-events-header has a 1px border on the bottom that overlaps this selection indicator
+											// therefore we need to make it +1px thicker so that it looks correct (consistent with the indicator in month view)
+											height: px(SELECTED_DATE_INDICATOR_THICKNESS + 1)
 										}
 									}),
 								])
