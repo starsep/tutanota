@@ -216,9 +216,21 @@ export class CalendarEventViewModel {
 	}
 
 	rescheduleEvent(newStartDate: Date) {
-		this.setStartDate(newStartDate)
-		this.setStartTime(Time.fromDate(newStartDate))
-		this._adjustEndTime()
+		const oldStartDate = new Date(this.startDate)
+		oldStartDate.setHours(this.startTime.hours)
+		oldStartDate.setMinutes(this.startTime.minutes)
+
+		const oldEndDate = new Date(this.endDate)
+		oldEndDate.setHours(this.endTime.hours)
+		oldEndDate.setMinutes(this.endTime.minutes)
+
+		const diff = newStartDate.getTime() - oldStartDate.getTime()
+		const newEndDate = new Date(oldEndDate.getTime() + diff)
+
+		this.startDate = newStartDate
+		this.endDate = newEndDate
+		this.startTime = Time.fromDate(newStartDate)
+		this.endTime = Time.fromDate(newEndDate)
 	}
 
 	_applyValuesFromExistingEvent(existingEvent: CalendarEvent, calendars: Map<Id, CalendarInfo>): void {
