@@ -11,6 +11,7 @@ import {
 	eventEndsAfterDay,
 	eventStartsBefore,
 	getEventColor,
+	getTimeTextFormatForLongEvent,
 	getTimeZone,
 	getWeekNumber
 } from "../date/CalendarUtils"
@@ -36,10 +37,11 @@ export type CalendarDayViewAttrs = {
 	onEventClicked: (event: CalendarEvent, domEvent: Event) => mixed,
 	groupColors: {[Id]: string},
 	hiddenCalendars: Set<Id>,
-	startOfTheWeek: WeekStartEnum
+	startOfTheWeek: WeekStartEnum,
 }
 
 type PageEvents = {shortEvents: Array<CalendarEvent>, longEvents: Array<CalendarEvent>, allDayEvents: Array<CalendarEvent>}
+
 
 export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 	_redrawIntervalId: ?IntervalID
@@ -182,10 +184,16 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 		}, [
 			m(".pr-l.flex.row.items-center", [
 				m("button.calendar-switch-button", {
-					onclick: () => {} // vnode.attrs.onDateSelected(yesterday),
+					onclick: () => {
+						const yesterday = incrementDate(new Date(date), -1)
+						attrs.onDateSelected(yesterday)
+					},
 				}, m(Icon, {icon: Icons.ArrowDropLeft, class: "icon-large switch-month-button"})),
 				m("button.calendar-switch-button", {
-					onclick: () => {} //vnode.attrs.onChangeWeek(tomorrow),
+					onclick: () => {
+						const tomorrow = incrementDate(new Date(date), 1)
+						attrs.onDateSelected(tomorrow)
+					},
 				}, m(Icon, {icon: Icons.ArrowDropRight, class: "icon-large switch-month-button"})),
 				m("h1", title),
 				// According to ISO 8601, weeks always start on Monday. Week numbering systems for
@@ -217,6 +225,7 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 		longEvents
 	}: PageEvents, mainPageEvents: PageEvents): Children {
 		const zone = getTimeZone()
+
 		return [
 			m(".calendar-hour-margin.pr-l", allDayEvents.map(e => {
 				return m(ContinuingCalendarEventBubble, {
@@ -225,7 +234,7 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 					endsAfter: eventEndsAfterDay(date, zone, e),
 					color: getEventColor(e, groupColors),
 					onEventClicked: (_, domEvent) => onEventClicked(e, domEvent),
-					showTime: false,
+					showTime: null,
 					user: logins.getUserController().user,
 				})
 			})),
@@ -235,7 +244,7 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 				endsAfter: eventEndsAfterDay(date, zone, e),
 				color: getEventColor(e, groupColors),
 				onEventClicked: (_, domEvent) => onEventClicked(e, domEvent),
-				showTime: true,
+				showTime: getTimeTextFormatForLongEvent(e, date, zone),
 				user: logins.getUserController().user
 			}))),
 			mainPageEvents.allDayEvents.length > 0 || mainPageEvents.longEvents.length > 0

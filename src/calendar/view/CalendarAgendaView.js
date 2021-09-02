@@ -6,11 +6,11 @@ import {styles} from "../../gui/styles"
 import {lang} from "../../misc/LanguageViewModel"
 import {formatDate, formatDateWithWeekday} from "../../misc/Formatter"
 import {
-	eventEndsAfterDay,
 	eventStartsBefore,
 	formatEventTime,
 	getEventColor,
 	getStartOfDayWithZone,
+	getTimeTextFormatForLongEvent,
 	getTimeZone,
 	hasAlarmsForTheUser
 } from "../date/CalendarUtils"
@@ -20,7 +20,6 @@ import {px, size} from "../../gui/size"
 import {lastThrow} from "../../api/common/utils/ArrayUtils"
 import type {CalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
 import {logins} from "../../api/main/LoginController"
-import {EventTextTimeOption} from "../../api/common/TutanotaConstants"
 
 type Attrs = {
 	/**
@@ -93,18 +92,7 @@ export class CalendarAgendaView implements MComponent<Attrs> {
 								? m(".mb-s", lang.get("noEntries_msg"))
 								: events.map((ev) => {
 									const startsBefore = eventStartsBefore(day, zone, ev)
-									const endsAfter = eventEndsAfterDay(day, zone, ev)
-
-									let timeFormat
-									if (isAllDayEvent(ev) || (startsBefore && endsAfter)) {
-										timeFormat = EventTextTimeOption.ALL_DAY
-									} else if (startsBefore && !endsAfter) {
-										timeFormat = EventTextTimeOption.END_TIME
-									} else if (!startsBefore && endsAfter) {
-										timeFormat = EventTextTimeOption.START_TIME
-									} else {
-										timeFormat = EventTextTimeOption.START_END_TIME
-									}
+									const timeFormat = getTimeTextFormatForLongEvent(ev, day, zone)
 
 									return m(".darker-hover.mb-s", {key: ev._id}, m(CalendarEventBubble, {
 										text: ev.summary,

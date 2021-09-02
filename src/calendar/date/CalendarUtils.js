@@ -3,7 +3,8 @@ import {getStartOfDay, incrementDate, isSameDay, isSameDayOfDate, isValidDate} f
 import type {
 	AlarmIntervalEnum,
 	CalendarAttendeeStatusEnum,
-	EndTypeEnum, EventTextTimeOptionEnum,
+	EndTypeEnum,
+	EventTextTimeOptionEnum,
 	RepeatPeriodEnum,
 	WeekStartEnum
 } from "../../api/common/TutanotaConstants"
@@ -11,7 +12,8 @@ import {
 	AlarmInterval,
 	CalendarAttendeeStatus,
 	defaultCalendarColor,
-	EndType, EventTextTimeOption,
+	EndType,
+	EventTextTimeOption,
 	getWeekStart,
 	RepeatPeriod,
 	WeekStart
@@ -786,4 +788,20 @@ export function getDateIndicator(day: Date, selectedDate: ?Date, currentDate: Da
 	} else {
 		return ""
 	}
+}
+
+export function getTimeTextFormatForLongEvent(ev: CalendarEvent, day: Date, zone: string): EventTextTimeOptionEnum {
+
+	const startsBefore = eventStartsBefore(day, zone, ev)
+	const endsAfter = eventEndsAfterDay(day, zone, ev)
+	if (isAllDayEvent(ev) || (startsBefore && endsAfter)) {
+		return EventTextTimeOption.ALL_DAY
+	} else if (startsBefore && !endsAfter) {
+		return EventTextTimeOption.END_TIME
+	} else if (!startsBefore && endsAfter) {
+		return EventTextTimeOption.START_TIME
+	} else {
+		return EventTextTimeOption.START_END_TIME
+	}
+
 }

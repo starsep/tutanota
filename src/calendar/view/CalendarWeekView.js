@@ -25,7 +25,7 @@ import {theme} from "../../gui/theme"
 import {px, size} from "../../gui/size"
 import {ContinuingCalendarEventBubble} from "./ContinuingCalendarEventBubble"
 import type {WeekStartEnum} from "../../api/common/TutanotaConstants"
-import {WeekStart} from "../../api/common/TutanotaConstants"
+import {EventTextTimeOption, WeekStart} from "../../api/common/TutanotaConstants"
 import {lastThrow} from "../../api/common/utils/ArrayUtils"
 import {Icon} from "../../gui/base/Icon"
 import {Icons} from "../../gui/base/icons/Icons"
@@ -35,6 +35,8 @@ import type {CalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
 import {logins} from "../../api/main/LoginController"
 import type {CalendarViewTypeEnum} from "./CalendarView"
 import {CalendarViewType, SELECTED_DATE_INDICATOR_THICKNESS} from "./CalendarView"
+import {entityDraggedHandler} from "../../gui/base/GuiUtils"
+import {getLetId} from "../../api/common/utils/EntityUtils"
 
 export type Attrs = {
 	selectedDate: Date,
@@ -321,8 +323,9 @@ export class CalendarWeekView implements MComponent<Attrs> {
 						endsAfter,
 						color: getEventColor(event, attrs.groupColors),
 						onEventClicked: attrs.onEventClicked,
-						showTime: !isAllDayEvent(event),
+						showTime: !isAllDayEvent(event) ? EventTextTimeOption.START_END_TIME : null,
 						user: logins.getUserController().user,
+						onDragStart: entityDraggedHandler(getLetId(event))
 					}))
 				}))
 		}, true)
