@@ -15,7 +15,7 @@ import {
 	getTimeZone,
 	getWeekNumber
 } from "../date/CalendarUtils"
-import {neverNull, noOp} from "../../api/common/utils/Utils"
+import {downcast, neverNull, noOp} from "../../api/common/utils/Utils"
 import {CalendarDayEventsView, calendarDayTimes} from "./CalendarDayEventsView"
 import {theme} from "../../gui/theme"
 import {px, size} from "../../gui/size"
@@ -38,6 +38,7 @@ export type CalendarDayViewAttrs = {
 	groupColors: {[Id]: string},
 	hiddenCalendars: Set<Id>,
 	startOfTheWeek: WeekStartEnum,
+	onEventMoved: (IdTuple, Date) => *
 }
 
 type PageEvents = {shortEvents: Array<CalendarEvent>, longEvents: Array<CalendarEvent>, allDayEvents: Array<CalendarEvent>}
@@ -140,6 +141,23 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 							e.stopPropagation()
 							vnode.attrs.onNewEvent(n)
 						},
+						ondragover: ev => ev.preventDefault(),
+						ondrop: (ev: DragEvent) => {
+							const id = ev.dataTransfer?.getData("text")
+							if (!!id) {
+								ev.preventDefault()
+								// calendar day events view doesn't keep track of which day it is rendering, so we need to replace that info
+								const actualDate = new Date(
+									date.getFullYear(),
+									date.getMonth(),
+									date.getDate(),
+									n.getHours(),
+									n.getMinutes(),
+									n.getSeconds()
+								)
+								vnode.attrs.onEventMoved(downcast(id.split(",")), actualDate)
+							}
+						}
 					},
 					m(".pt.pl-s.pr-s.center.small", {
 						style: {
@@ -165,7 +183,19 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 						newDate.setHours(hours, minutes)
 						vnode.attrs.onNewEvent(newDate)
 					},
-					onEventMoved: noOp // TODO
+					onEventMoved: (id, newDate) => {
+						// calendar day events view doesn't keep track of which day it is rendering, so we need to replace that info
+						const actualDate = new Date(
+							date.getFullYear(),
+							date.getMonth(),
+							date.getDate(),
+							newDate.getHours(),
+							newDate.getMinutes(),
+							newDate.getSeconds()
+						)
+
+						vnode.attrs.onEventMoved(id, actualDate)
+					}
 				})),
 			]),
 

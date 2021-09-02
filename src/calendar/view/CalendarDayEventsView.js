@@ -56,7 +56,6 @@ export class CalendarDayEventsView implements MComponent<Attrs> {
 						ondragover: ev => ev.preventDefault(),
 						ondrop: (ev: DragEvent) => {
 							const id = ev.dataTransfer?.getData("text")
-							console.log(n)
 							if (!!id) {
 								ev.preventDefault()
 								vnode.attrs.onEventMoved(downcast(id.split(",")), n)

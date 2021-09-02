@@ -655,10 +655,18 @@ export class CalendarEventViewModel {
 		}
 	}
 
+	async waitForResolvedRecipients(): Promise<void> {
+		await Promise.all([
+			this._inviteModel.waitForResolvedRecipients(),
+			this._updateModel.waitForResolvedRecipients(),
+			this._cancelModel.waitForResolvedRecipients(),
+		])
+	}
+
 	/**
 	 * @reject UserError
 	 */
-	saveAndSend(
+	async saveAndSend(
 		{askForUpdates, askInsecurePassword, showProgress}: {
 			askForUpdates: () => Promise<"yes" | "no" | "cancel">,
 			askInsecurePassword: () => Promise<boolean>,
@@ -669,7 +677,10 @@ export class CalendarEventViewModel {
 			return Promise.resolve(false)
 		}
 		this._processing = true
-		return Promise.resolve().then(() => {
+		return Promise.resolve().then(async () => {
+
+			await this.waitForResolvedRecipients()
+
 			const newEvent = this._initializeNewEvent()
 			const newAlarms = this.alarms.slice()
 			if (this._eventType === EventType.OWN) {

@@ -92,7 +92,6 @@ import {ofClass, promiseMap} from "../../api/common/utils/PromiseUtils"
 import {createMoreActionButtonAttrs} from "../../gui/base/GuiUtils"
 import {UserError} from "../../api/main/UserError"
 import {showUserError} from "../../misc/ErrorHandlerImpl"
-import {Time} from "../../api/common/utils/Time"
 
 export const SELECTED_DATE_INDICATOR_THICKNESS = 4
 export const LIMIT_PAST_EVENTS_YEARS = 100
@@ -253,6 +252,10 @@ export class CalendarView implements CurrentView {
 							groupColors,
 							hiddenCalendars: this._hiddenCalendars,
 							startOfTheWeek: downcast(logins.getUserController().userSettingsGroupRoot.startOfTheWeek),
+							onEventMoved: async (id, newDate) => {
+								const event = await locator.entityClient.load(CalendarEventTypeRef, id)
+								await this._moveEvent(event, newDate)
+							}
 						})
 					case CalendarViewType.WEEK:
 						return m(CalendarWeekView, {
@@ -270,7 +273,6 @@ export class CalendarView implements CurrentView {
 							hiddenCalendars: this._hiddenCalendars,
 							onChangeWeek: (next) => this._viewPeriod(next),
 							onEventMoved: async (id, newDate) => {
-								console.log(newDate)
 								const event = await locator.entityClient.load(CalendarEventTypeRef, id)
 								await this._moveEvent(event, newDate)
 							}
@@ -696,7 +698,7 @@ export class CalendarView implements CurrentView {
 			this._calendarInfos.getAsync(),
 		])
 		return createCalendarEventViewModel(getEventStart(event, getTimeZone()), calendarInfos, mailboxDetails,
-			event, null, true)
+			event, null, false)
 	}
 
 	_editEvent(event: CalendarEvent) {
