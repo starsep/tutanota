@@ -14,6 +14,7 @@ import {
 	getEventColor,
 	getEventEnd,
 	getEventStart,
+	getTimeTextFormatForLongEventOnWeek,
 	getTimeZone,
 	getWeekNumber,
 	layOutEvents
@@ -25,7 +26,7 @@ import {theme} from "../../gui/theme"
 import {px, size} from "../../gui/size"
 import {ContinuingCalendarEventBubble} from "./ContinuingCalendarEventBubble"
 import type {WeekStartEnum} from "../../api/common/TutanotaConstants"
-import {EventTextTimeOption, WeekStart} from "../../api/common/TutanotaConstants"
+import {WeekStart} from "../../api/common/TutanotaConstants"
 import {lastThrow} from "../../api/common/utils/ArrayUtils"
 import {Icon} from "../../gui/base/Icon"
 import {Icons} from "../../gui/base/icons/Icons"
@@ -323,7 +324,7 @@ export class CalendarWeekView implements MComponent<Attrs> {
 						endsAfter,
 						color: getEventColor(event, attrs.groupColors),
 						onEventClicked: attrs.onEventClicked,
-						showTime: !isAllDayEvent(event) ? EventTextTimeOption.START_END_TIME : null,
+						showTime: getTimeTextFormatForLongEventOnWeek(event, firstDayOfWeek, lastDayOfWeek, zone),
 						user: logins.getUserController().user,
 						onDragStart: entityDraggedHandler(getLetId(event))
 					}))

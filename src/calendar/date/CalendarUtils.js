@@ -51,8 +51,16 @@ export function eventStartsBefore(currentDate: Date, zone: string, event: Calend
 	return getEventStart(event, zone).getTime() < currentDate.getTime()
 }
 
+export function eventStartsBeforeOrOnDay(currentDate: Date, zone: string, event: CalendarEvent): boolean {
+	return getEventStart(event, zone).getTime() <= currentDate.getTime()
+}
+
 export function eventEndsAfterDay(currentDate: Date, zone: string, event: CalendarEvent): boolean {
 	return getEventEnd(event, zone).getTime() > getStartOfNextDayWithZone(currentDate, zone).getTime()
+}
+
+export function eventEndsAfterOrOnDay(currentDate: Date, zone: string, event: CalendarEvent): boolean {
+	return getEventEnd(event, zone).getTime() >= getStartOfNextDayWithZone(currentDate, zone).getTime()
 }
 
 export function generateUid(groupId: Id, timestamp: number): string {
@@ -301,6 +309,8 @@ export function formatEventTime(event: CalendarEvent, showTime: EventTextTimeOpt
 			return `${formatTime(event.startTime)} - ${formatTime(event.endTime)}`
 		case EventTextTimeOption.ALL_DAY:
 			return lang.get("allDay_label")
+		case EventTextTimeOption.ALL_WEEK:
+			return lang.get("allWeek_label")
 		default:
 			throw new Error("Unknown time option " + showTime)
 	}
@@ -790,8 +800,7 @@ export function getDateIndicator(day: Date, selectedDate: ?Date, currentDate: Da
 	}
 }
 
-export function getTimeTextFormatForLongEvent(ev: CalendarEvent, day: Date, zone: string): EventTextTimeOptionEnum {
-
+export function getTimeTextFormatForLongEventOnDay(ev: CalendarEvent, day: Date, zone: string): EventTextTimeOptionEnum {
 	const startsBefore = eventStartsBefore(day, zone, ev)
 	const endsAfter = eventEndsAfterDay(day, zone, ev)
 	if (isAllDayEvent(ev) || (startsBefore && endsAfter)) {
@@ -799,6 +808,24 @@ export function getTimeTextFormatForLongEvent(ev: CalendarEvent, day: Date, zone
 	} else if (startsBefore && !endsAfter) {
 		return EventTextTimeOption.END_TIME
 	} else if (!startsBefore && endsAfter) {
+		return EventTextTimeOption.START_TIME
+	} else {
+		return EventTextTimeOption.START_END_TIME
+	}
+
+}
+
+export function getTimeTextFormatForLongEventOnWeek(ev: CalendarEvent, startDay: Date, endDay: Date, zone: string): ?EventTextTimeOptionEnum {
+	const startsBeforeWeek = eventStartsBeforeOrOnDay(startDay, zone, ev)
+	const endsAfterWeek = eventEndsAfterOrOnDay(endDay, zone, ev)
+
+	if (startsBeforeWeek && endsAfterWeek) {
+		return EventTextTimeOption.ALL_WEEK
+	} else if (isAllDayEvent(ev)) {
+		return null
+	} else if (startsBeforeWeek && !endsAfterWeek) {
+		return EventTextTimeOption.END_TIME
+	} else if (!startsBeforeWeek && endsAfterWeek) {
 		return EventTextTimeOption.START_TIME
 	} else {
 		return EventTextTimeOption.START_END_TIME

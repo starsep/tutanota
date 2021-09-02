@@ -11,7 +11,7 @@ import {
 	eventEndsAfterDay,
 	eventStartsBefore,
 	getEventColor,
-	getTimeTextFormatForLongEvent,
+	getTimeTextFormatForLongEventOnDay,
 	getTimeZone,
 	getWeekNumber
 } from "../date/CalendarUtils"
@@ -24,7 +24,7 @@ import type {CalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
 import {logins} from "../../api/main/LoginController"
 import {lang} from "../../misc/LanguageViewModel"
 import type {WeekStartEnum} from "../../api/common/TutanotaConstants"
-import {WeekStart} from "../../api/common/TutanotaConstants"
+import {EventTextTimeOption, WeekStart} from "../../api/common/TutanotaConstants"
 import {Icon} from "../../gui/base/Icon"
 import {Icons} from "../../gui/base/icons/Icons"
 import {styles} from "../../gui/styles"
@@ -234,7 +234,7 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 					endsAfter: eventEndsAfterDay(date, zone, e),
 					color: getEventColor(e, groupColors),
 					onEventClicked: (_, domEvent) => onEventClicked(e, domEvent),
-					showTime: null,
+					showTime: EventTextTimeOption.ALL_DAY,
 					user: logins.getUserController().user,
 				})
 			})),
@@ -244,7 +244,7 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 				endsAfter: eventEndsAfterDay(date, zone, e),
 				color: getEventColor(e, groupColors),
 				onEventClicked: (_, domEvent) => onEventClicked(e, domEvent),
-				showTime: getTimeTextFormatForLongEvent(e, date, zone),
+				showTime: getTimeTextFormatForLongEventOnDay(e, date, zone),
 				user: logins.getUserController().user
 			}))),
 			mainPageEvents.allDayEvents.length > 0 || mainPageEvents.longEvents.length > 0

@@ -10,7 +10,7 @@ import {
 	formatEventTime,
 	getEventColor,
 	getStartOfDayWithZone,
-	getTimeTextFormatForLongEvent,
+	getTimeTextFormatForLongEventOnDay,
 	getTimeZone,
 	hasAlarmsForTheUser
 } from "../date/CalendarUtils"
@@ -92,7 +92,7 @@ export class CalendarAgendaView implements MComponent<Attrs> {
 								? m(".mb-s", lang.get("noEntries_msg"))
 								: events.map((ev) => {
 									const startsBefore = eventStartsBefore(day, zone, ev)
-									const timeFormat = getTimeTextFormatForLongEvent(ev, day, zone)
+									const timeFormat = getTimeTextFormatForLongEventOnDay(ev, day, zone)
 
 									return m(".darker-hover.mb-s", {key: ev._id}, m(CalendarEventBubble, {
 										text: ev.summary,

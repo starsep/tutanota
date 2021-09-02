@@ -1401,6 +1401,7 @@ export default {
 		"yourFolders_action": "DEINE ORDNER",
 		"yourMessage_label": "Deine Nachricht",
 		"you_label": "Du",
-		"week_label": "Woche"
+		"week_label": "Woche",
+		"allWeek_label": "ganze Woche",
 	}
 }
