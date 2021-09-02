@@ -7,6 +7,7 @@ import {ContinuingCalendarEventBubble} from "./ContinuingCalendarEventBubble"
 import {isAllDayEvent} from "../../api/common/utils/CommonCalendarUtils"
 import {
 	CALENDAR_EVENT_HEIGHT,
+	combineDateWithTime,
 	DEFAULT_HOUR_OF_DAY,
 	eventEndsAfterDay,
 	eventStartsBefore,
@@ -15,7 +16,7 @@ import {
 	getTimeZone,
 	getWeekNumber
 } from "../date/CalendarUtils"
-import {downcast, neverNull, noOp} from "../../api/common/utils/Utils"
+import {downcast, neverNull} from "../../api/common/utils/Utils"
 import {CalendarDayEventsView, calendarDayTimes} from "./CalendarDayEventsView"
 import {theme} from "../../gui/theme"
 import {px, size} from "../../gui/size"
@@ -28,6 +29,7 @@ import {EventTextTimeOption, WeekStart} from "../../api/common/TutanotaConstants
 import {Icon} from "../../gui/base/Icon"
 import {Icons} from "../../gui/base/icons/Icons"
 import {styles} from "../../gui/styles"
+import {Time} from "../../api/common/utils/Time"
 
 export type CalendarDayViewAttrs = {
 	selectedDate: Date,
@@ -136,10 +138,10 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 					}
 				},
 			}, [
-				m(".flex.col", calendarDayTimes.map(n => m(".calendar-hour.flex", {
+				m(".flex.col", calendarDayTimes.map(time => m(".calendar-hour.flex", {
 						onclick: (e) => {
 							e.stopPropagation()
-							vnode.attrs.onNewEvent(n)
+							vnode.attrs.onNewEvent(time)
 						},
 						ondragover: ev => ev.preventDefault(),
 						ondrop: (ev: DragEvent) => {
@@ -147,14 +149,7 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 							if (!!id) {
 								ev.preventDefault()
 								// calendar day events view doesn't keep track of which day it is rendering, so we need to replace that info
-								const actualDate = new Date(
-									date.getFullYear(),
-									date.getMonth(),
-									date.getDate(),
-									n.getHours(),
-									n.getMinutes(),
-									n.getSeconds()
-								)
+								const actualDate = combineDateWithTime(date, Time.fromDate(time))
 								vnode.attrs.onEventMoved(downcast(id.split(",")), actualDate)
 							}
 						}
@@ -165,7 +160,7 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 							height: px(size.calendar_hour_height),
 							'border-right': `2px solid ${theme.content_border}`,
 						},
-					}, formatTime(n))
+					}, formatTime(time))
 					)
 				)),
 				m(".flex-grow", m(CalendarDayEventsView, {
@@ -185,15 +180,7 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 					},
 					onEventMoved: (id, newDate) => {
 						// calendar day events view doesn't keep track of which day it is rendering, so we need to replace that info
-						const actualDate = new Date(
-							date.getFullYear(),
-							date.getMonth(),
-							date.getDate(),
-							newDate.getHours(),
-							newDate.getMinutes(),
-							newDate.getSeconds()
-						)
-
+						const actualDate = combineDateWithTime(date, Time.fromDate(newDate))
 						vnode.attrs.onEventMoved(id, actualDate)
 					}
 				})),

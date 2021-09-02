@@ -36,6 +36,7 @@ import type {CalendarInfo} from "../view/CalendarView"
 import {isSameId} from "../../api/common/utils/EntityUtils";
 import {insertIntoSortedArray} from "../../api/common/utils/ArrayUtils"
 import type {UserSettingsGroupRoot} from "../../api/entities/tutanota/UserSettingsGroupRoot"
+import type {Time} from "../../api/common/utils/Time"
 
 assertMainOrNode()
 
@@ -830,5 +831,18 @@ export function getTimeTextFormatForLongEventOnWeek(ev: CalendarEvent, startDay:
 	} else {
 		return EventTextTimeOption.START_END_TIME
 	}
+}
+
+/**
+ * Creates a new date with the year, month and day from the Date and the hours and minutes from the Time
+ * @param date
+ * @param time
+ */
+export function combineDateWithTime(date: Date, time: Time): Date {
+	const newDate = new Date(date)
+	newDate.setHours(time.hours)
+	newDate.setMinutes(time.minutes)
+
+	return newDate
 
 }

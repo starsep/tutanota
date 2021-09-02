@@ -5,7 +5,7 @@ import {getStartOfDay, incrementDate, isSameDay} from "../../api/common/utils/Da
 import {styles} from "../../gui/styles"
 import {formatTime} from "../../misc/Formatter"
 import {
-	CALENDAR_EVENT_HEIGHT,
+	CALENDAR_EVENT_HEIGHT, combineDateWithTime,
 	DEFAULT_HOUR_OF_DAY,
 	eventEndsAfterDay,
 	eventStartsBefore,
@@ -38,6 +38,7 @@ import type {CalendarViewTypeEnum} from "./CalendarView"
 import {CalendarViewType, SELECTED_DATE_INDICATOR_THICKNESS} from "./CalendarView"
 import {entityDraggedHandler} from "../../gui/base/GuiUtils"
 import {getLetId} from "../../api/common/utils/EntityUtils"
+import {Time} from "../../api/common/utils/Time"
 
 export type Attrs = {
 	selectedDate: Date,
@@ -243,15 +244,7 @@ export class CalendarWeekView implements MComponent<Attrs> {
 							onTimeContextPressed: newEventHandler,
 							onEventMoved: (id, newDate) => {
 								// calendar day events view doesn't keep track of which day it is rendering, so we need to replace that info
-								const actualDate = new Date(
-									weekday.getFullYear(),
-									weekday.getMonth(),
-									weekday.getDate(),
-									newDate.getHours(),
-									newDate.getMinutes(),
-									newDate.getSeconds()
-								)
-
+								const actualDate = combineDateWithTime(weekday, Time.fromDate(newDate))
 								attrs.onEventMoved(id, actualDate)
 							}
 						}))
