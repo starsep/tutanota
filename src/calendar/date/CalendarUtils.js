@@ -333,12 +333,21 @@ export function expandEvent(ev: CalendarEvent, columnIndex: number, columns: Arr
 }
 
 
+//FIXME behavoir does not match comment
 /**
  * Result is positive or 0 if b > a, result is negative or 0 otherwise
  */
 export function getDiffInDays(a: Date, b: Date): number {
 	// discard the time and time-zone information
 	return Math.floor(DateTime.fromJSDate(a).diff(DateTime.fromJSDate(b), 'day').days)
+}
+
+/**
+ * Result is positive or 0 if b > a, result is negative or 0 otherwise
+ */
+export function getDiffInHours(a: Date, b: Date): number {
+	// discard the time and time-zone information
+	return Math.floor(DateTime.fromJSDate(b).diff(DateTime.fromJSDate(a), 'hours').hours)
 }
 
 export function getEventColor(event: CalendarEvent, groupColors: {[Id]: string}): string {

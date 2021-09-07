@@ -4,6 +4,8 @@ import type {CalendarMonth} from "../../../src/calendar/date/CalendarUtils";
 import {
 	findNextAlarmOccurrence,
 	getCalendarMonth,
+	getDiffInDays,
+	getDiffInHours,
 	getStartOfWeek,
 	getWeekNumber,
 	prepareCalendarDescription
@@ -348,6 +350,20 @@ o.spec("calendar utils tests", function () {
 				DateTime.fromObject({year: 2019, month: 5, day: 1, hour: 0, zone: timeZone}).toJSDate(),
 				DateTime.fromObject({year: 2019, month: 5, day: 2, hour: 0, zone: timeZone}).toJSDate(),
 			])
+		})
+	})
+	o.spec("Diff between events", function () {
+		o("diff in hours", function () {
+			o(getDiffInHours(new Date(2021, 0, 1, 0, 0), new Date(2021, 0, 2, 0, 0))).equals(24)
+			o(getDiffInHours(new Date(2021, 0, 2, 0, 0), new Date(2021, 0, 1, 0, 0))).equals(-24)
+			o(getDiffInHours(new Date(2021, 0, 1, 0, 0), new Date(2021, 0, 1, 0, 30))).equals(0)
+			o(getDiffInHours(new Date(2021, 0, 1, 0, 0), new Date(2021, 0, 1, 1, 0))).equals(1)
+		})
+		o("diff in days", function () {
+			o(getDiffInDays(new Date(2021, 0, 1, 0, 0), new Date(2021, 0, 2, 0, 0))).equals(1)
+			o(getDiffInDays(new Date(2021, 0, 2, 0, 0), new Date(2021, 0, 1, 0, 0))).equals(-1)
+			o(getDiffInDays(new Date(2021, 0, 1, 0, 0), new Date(2021, 0, 1, 0, 30))).equals(0)
+			o(getDiffInDays(new Date(2021, 0, 1, 0, 0), new Date(2021, 0, 1, 1, 0))).equals(0)
 		})
 	})
 })
