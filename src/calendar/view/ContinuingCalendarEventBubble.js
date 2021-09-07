@@ -16,9 +16,11 @@ type ContinuingCalendarEventBubbleAttrs = {|
 	showTime: ?EventTextTimeOptionEnum,
 	user: User,
 	onDragStart?: DragEvent => *,
+	onDragEnd?: DragEvent => *,
 |}
 
-export class ContinuingCalendarEventBubble implements MComponent<ContinuingCalendarEventBubbleAttrs> {
+export class
+ContinuingCalendarEventBubble implements MComponent<ContinuingCalendarEventBubbleAttrs> {
 
 	view({attrs}: Vnode<ContinuingCalendarEventBubbleAttrs>): Children {
 		return m(".flex.calendar-event-cont.darker-hover", [
@@ -41,6 +43,7 @@ export class ContinuingCalendarEventBubble implements MComponent<ContinuingCalen
 					noBorderRight: attrs.endsAfter,
 					hasAlarm: hasAlarmsForTheUser(attrs.user, attrs.event),
 					onDragStart: attrs.onDragStart,
+					onDragEnd: attrs.onDragEnd
 				}),
 			),
 			attrs.endsAfter

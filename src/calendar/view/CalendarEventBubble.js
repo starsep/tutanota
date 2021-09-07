@@ -18,6 +18,7 @@ export type CalendarEventBubbleAttrs = {
 	noBorderLeft?: boolean,
 	verticalPadding?: number,
 	onDragStart?: DragEvent => *,
+	onDragEnd?: DragEvent => *,
 }
 
 
@@ -43,7 +44,8 @@ export class CalendarEventBubble implements MComponent<CalendarEventBubbleAttrs>
 					attrs.click(e, e.target)
 				},
 				draggable: attrs.onDragStart != null,
-				ondragstart: attrs.onDragStart ?? noOp
+				ondragstart: attrs.onDragStart,
+				ondragend: attrs.onDragEnd,
 			}, [
 				attrs.hasAlarm
 					? m(Icon, {

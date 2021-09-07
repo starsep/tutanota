@@ -846,3 +846,17 @@ export function combineDateWithTime(date: Date, time: Time): Date {
 	return newDate
 
 }
+
+export function deactivateBubblePointerEvents(bubbleDoms: Iterable<HTMLElement>) {
+	for (let dom of bubbleDoms) {
+		dom.style.pointerEvents = "none"
+		dom.style.opacity = "0.7"
+	}
+}
+
+export function activateBubblePointerEvents(bubbleDoms: Iterable<HTMLElement>) {
+	for (let dom of bubbleDoms) {
+		dom.style.pointerEvents = "auto"
+		dom.style.opacity = "1"
+	}
+}

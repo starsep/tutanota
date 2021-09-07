@@ -6,8 +6,10 @@ import {incrementDate, isSameDay} from "../../api/common/utils/DateUtils"
 import {ContinuingCalendarEventBubble} from "./ContinuingCalendarEventBubble"
 import {isAllDayEvent} from "../../api/common/utils/CommonCalendarUtils"
 import {
+	activateBubblePointerEvents,
 	CALENDAR_EVENT_HEIGHT,
 	combineDateWithTime,
+	deactivateBubblePointerEvents,
 	DEFAULT_HOUR_OF_DAY,
 	eventEndsAfterDay,
 	eventStartsBefore,
@@ -51,10 +53,12 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 	_selectedDate: Date
 	_domElements: Array<HTMLElement> = []
 	_scrollPosition: number
+	_bubbleDoms: Set<HTMLElement>
 
 
 	constructor() {
 		this._scrollPosition = size.calendar_hour_height * DEFAULT_HOUR_OF_DAY
+		this._bubbleDoms = new Set()
 	}
 
 	view(vnode: Vnode<CalendarDayViewAttrs>): Children {
@@ -182,7 +186,11 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 						// calendar day events view doesn't keep track of which day it is rendering, so we need to replace that info
 						const actualDate = combineDateWithTime(date, Time.fromDate(newDate))
 						vnode.attrs.onEventMoved(id, actualDate)
-					}
+					},
+					onDragStart: () => deactivateBubblePointerEvents(this._bubbleDoms),
+					onDragEnd: () => activateBubblePointerEvents(this._bubbleDoms),
+					onBubbleCreated: bubble => this._bubbleDoms.add(bubble),
+					onBubbleDestroyed: bubble => this._bubbleDoms.delete(bubble)
 				})),
 			]),
 

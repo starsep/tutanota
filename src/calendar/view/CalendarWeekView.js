@@ -5,7 +5,10 @@ import {getStartOfDay, incrementDate, isSameDay} from "../../api/common/utils/Da
 import {styles} from "../../gui/styles"
 import {formatTime} from "../../misc/Formatter"
 import {
-	CALENDAR_EVENT_HEIGHT, combineDateWithTime,
+	activateBubblePointerEvents,
+	CALENDAR_EVENT_HEIGHT,
+	combineDateWithTime,
+	deactivateBubblePointerEvents,
 	DEFAULT_HOUR_OF_DAY,
 	eventEndsAfterDay,
 	eventStartsBefore,
@@ -36,9 +39,8 @@ import type {CalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
 import {logins} from "../../api/main/LoginController"
 import type {CalendarViewTypeEnum} from "./CalendarView"
 import {CalendarViewType, SELECTED_DATE_INDICATOR_THICKNESS} from "./CalendarView"
-import {entityDraggedHandler} from "../../gui/base/GuiUtils"
-import {getLetId} from "../../api/common/utils/EntityUtils"
 import {Time} from "../../api/common/utils/Time"
+import {handleEntityDragged} from "../../gui/base/GuiUtils"
 
 export type Attrs = {
 	selectedDate: Date,
@@ -66,9 +68,11 @@ export class CalendarWeekView implements MComponent<Attrs> {
 	_longEventsDom: ?HTMLElement;
 	_domElements: HTMLElement[] = [];
 	_scrollPosition: number;
+	_bubbleDoms: Set<HTMLElement>
 
 	constructor() {
 		this._scrollPosition = size.calendar_hour_height * DEFAULT_HOUR_OF_DAY
+		this._bubbleDoms = new Set()
 	}
 
 	view(vnode: Vnode<Attrs>): Children {
@@ -246,6 +250,14 @@ export class CalendarWeekView implements MComponent<Attrs> {
 								// calendar day events view doesn't keep track of which day it is rendering, so we need to replace that info
 								const actualDate = combineDateWithTime(weekday, Time.fromDate(newDate))
 								attrs.onEventMoved(id, actualDate)
+							},
+							onDragStart: () => deactivateBubblePointerEvents(this._bubbleDoms),
+							onDragEnd: () => activateBubblePointerEvents(this._bubbleDoms),
+							onBubbleCreated: dom => {
+								this._bubbleDoms.add(dom)
+							},
+							onBubbleDestroyed: dom => {
+								this._bubbleDoms.delete(dom)
 							}
 						}))
 					})
@@ -319,7 +331,12 @@ export class CalendarWeekView implements MComponent<Attrs> {
 						onEventClicked: attrs.onEventClicked,
 						showTime: getTimeTextFormatForLongEventOnWeek(event, firstDayOfWeek, lastDayOfWeek, zone),
 						user: logins.getUserController().user,
-						onDragStart: entityDraggedHandler(getLetId(event))
+						onDragStart: (dragEvent) => {
+							handleEntityDragged(event, dragEvent)
+							deactivateBubblePointerEvents(this._bubbleDoms)
+						},
+						onDragEnd: () => activateBubblePointerEvents(this._bubbleDoms)
+
 					}))
 				}))
 		}, true)
