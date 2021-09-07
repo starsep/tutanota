@@ -258,7 +258,8 @@ export class CalendarWeekView implements MComponent<Attrs> {
 							},
 							onBubbleDestroyed: dom => {
 								this._bubbleDoms.delete(dom)
-							}
+							},
+							day: attrs.selectedDate
 						}))
 					})
 				)

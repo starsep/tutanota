@@ -101,7 +101,7 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 			}
 			if (isAllDayEvent(e)) {
 				allDayEvents.push(e)
-			} else if (eventStartsBefore(date, zone, e) || eventEndsAfterDay(date, zone, e)) {
+			} else if (eventStartsBefore(date, zone, e) && eventEndsAfterDay(date, zone, e)) {
 				longEvents.push(e)
 			} else {
 				shortEvents.push(e)
@@ -190,7 +190,8 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 					onDragStart: () => deactivateBubblePointerEvents(this._bubbleDoms),
 					onDragEnd: () => activateBubblePointerEvents(this._bubbleDoms),
 					onBubbleCreated: bubble => this._bubbleDoms.add(bubble),
-					onBubbleDestroyed: bubble => this._bubbleDoms.delete(bubble)
+					onBubbleDestroyed: bubble => this._bubbleDoms.delete(bubble),
+					day: vnode.attrs.selectedDate
 				})),
 			]),
 

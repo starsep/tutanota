@@ -3,14 +3,23 @@
 import m from "mithril"
 import {theme} from "../../gui/theme"
 import {px, size} from "../../gui/size"
-import {DAY_IN_MILLIS} from "../../api/common/utils/DateUtils"
+import {DAY_IN_MILLIS, getEndOfDay, getStartOfDay} from "../../api/common/utils/DateUtils"
 import {numberRange} from "../../api/common/utils/ArrayUtils"
-import {expandEvent, formatEventTime, getEventColor, getTimeZone, hasAlarmsForTheUser, layOutEvents} from "../date/CalendarUtils"
+import {
+	eventEndsAfterDay,
+	eventStartsBefore,
+	expandEvent,
+	formatEventTime,
+	getEventColor,
+	getTimeTextFormatForLongEventOnDay,
+	getTimeZone,
+	hasAlarmsForTheUser,
+	layOutEvents
+} from "../date/CalendarUtils"
 import {CalendarEventBubble} from "./CalendarEventBubble"
 import {downcast, neverNull} from "../../api/common/utils/Utils"
 import type {CalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
 import {logins} from "../../api/main/LoginController"
-import {EventTextTimeOption} from "../../api/common/TutanotaConstants"
 import {isAllDayEvent} from "../../api/common/utils/CommonCalendarUtils"
 import {handleEntityDragged} from "../../gui/base/GuiUtils"
 
@@ -26,6 +35,7 @@ export type Attrs = {
 	onDragEnd: DragEvent => *,
 	onBubbleCreated: HTMLElement => *,
 	onBubbleDestroyed: HTMLElement => *,
+	day: Date
 }
 
 export const calendarDayTimes: Array<Date> = numberRange(0, 23).map((n) => {
@@ -113,8 +123,14 @@ export class CalendarDayEventsView implements MComponent<Attrs> {
 
 
 	_renderEvent(attrs: Attrs, ev: CalendarEvent, columnIndex: number, columns: Array<Array<CalendarEvent>>, columnWidth: number): Children {
-		const startTime = (ev.startTime.getHours() * 60 + ev.startTime.getMinutes()) * 60 * 1000
-		const height = (ev.endTime.getTime() - ev.startTime.getTime()) / (1000 * 60 * 60) * size.calendar_hour_height
+
+		const zone = getTimeZone()
+		const startOfEvent = eventStartsBefore(attrs.day, zone, ev) ? getStartOfDay(attrs.day) : ev.startTime
+		const endOfEvent = eventEndsAfterDay(attrs.day, zone, ev) ? getEndOfDay(attrs.day) : ev.endTime
+
+		const startTime = (startOfEvent.getHours() * 60 + startOfEvent.getMinutes()) * 60 * 1000
+		const height = (endOfEvent.getTime() - startOfEvent.getTime()) / (1000 * 60 * 60) * size.calendar_hour_height
+
 		const colSpan = expandEvent(ev, columnIndex, columns)
 		const padding = 2
 		return m(".abs.darker-hover", {
@@ -128,7 +144,7 @@ export class CalendarDayEventsView implements MComponent<Attrs> {
 			onbeforeremove: vnode => attrs.onBubbleDestroyed(vnode.dom),
 		}, m(CalendarEventBubble, {
 			text: ev.summary,
-			secondLineText: !isAllDayEvent(ev) ? formatEventTime(ev, EventTextTimeOption.START_END_TIME) : null,
+			secondLineText: !isAllDayEvent(ev) ? formatEventTime(ev, getTimeTextFormatForLongEventOnDay(ev, attrs.day, zone)) : null,
 			color: getEventColor(ev, attrs.groupColors),
 			click: (domEvent) => attrs.onEventClicked(ev, domEvent),
 			height: height - padding,
