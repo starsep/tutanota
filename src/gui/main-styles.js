@@ -1324,8 +1324,8 @@ styles.registerStyle('main', () => {
 		},
 		'.date-current': {
 			'border-radius': '50%',
-			background: getContentButtonIconBackground(),
-			color: theme.navigation_button_icon,
+			background: theme.content_accent,
+			color: theme.elevated_bg,
 		},
 
 		'.switch-month-button': {
