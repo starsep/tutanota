@@ -395,7 +395,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 		if (currentDrag != null) {
 
 			const dayUnderMouse = neverNull(this.getDayUnderMouse())
-			const mouseDiff = getDiffInDays(dayUnderMouse, currentDrag.originDay)
+			const mouseDiff = getDiffInDays(currentDrag.originDay, dayUnderMouse)
 			const newDate = new Date(currentDrag.event.startTime)
 			newDate.setDate(currentDrag.event.startTime.getDate() + mouseDiff)
 
@@ -419,6 +419,6 @@ function getDiffInDaysFast(left: Date, right: Date): number {
 	if (left.getMonth() === right.getMonth()) {
 		return left.getDate() - right.getDate()
 	} else {
-		return getDiffInDays(left, right)
+		return getDiffInDays(right, left)
 	}
 }

@@ -310,8 +310,8 @@ export class CalendarWeekView implements MComponent<Attrs> {
 				rows.map((event) => {
 					const zone = getTimeZone()
 					const eventEnd = isAllDayEvent(event) ? incrementDate(getEventEnd(event, zone), -1) : event.endTime
-					const dayOfStartDateInWeek = getDiffInDays(getEventStart(event, zone), firstDayOfWeek)
-					const dayOfEndDateInWeek = getDiffInDays(eventEnd, firstDayOfWeek)
+					const dayOfStartDateInWeek = getDiffInDays(firstDayOfWeek, getEventStart(event, zone))
+					const dayOfEndDateInWeek = getDiffInDays(firstDayOfWeek, eventEnd)
 					const startsBefore = eventStartsBefore(firstDayOfWeek, zone, event)
 					const endsAfter = eventEndsAfterDay(lastDayOfWeek, zone, event)
 					const left = startsBefore ? 0 : dayOfStartDateInWeek * dayWidth

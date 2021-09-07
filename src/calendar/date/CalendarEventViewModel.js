@@ -494,7 +494,7 @@ export class CalendarEventViewModel {
 				newDate.setFullYear(thisYear)
 				this.startDate = newDate
 			} else {
-				const diff = getDiffInDays(date, this.startDate)
+				const diff = getDiffInDays(this.startDate, date)
 				this.endDate = DateTime.fromJSDate(this.endDate, {zone: this._zone}).plus({days: diff}).toJSDate()
 				this.startDate = date
 			}

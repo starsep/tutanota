@@ -339,7 +339,7 @@ export function expandEvent(ev: CalendarEvent, columnIndex: number, columns: Arr
  */
 export function getDiffInDays(a: Date, b: Date): number {
 	// discard the time and time-zone information
-	return Math.floor(DateTime.fromJSDate(a).diff(DateTime.fromJSDate(b), 'day').days)
+	return Math.floor(DateTime.fromJSDate(b).diff(DateTime.fromJSDate(a), 'day').days)
 }
 
 /**
@@ -503,7 +503,7 @@ export function addDaysForRecurringEvent(events: Map<number, Array<CalendarEvent
 		}
 	}
 	let calcStartTime = eventStartTime
-	const calcDuration = allDay ? getDiffInDays(eventEndTime, eventStartTime) : eventEndTime - eventStartTime
+	const calcDuration = allDay ? getDiffInDays(eventStartTime, eventEndTime) : eventEndTime - eventStartTime
 	let calcEndTime = eventEndTime
 	let iteration = 1
 	while ((endOccurrences == null || iteration <= endOccurrences)
