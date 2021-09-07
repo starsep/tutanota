@@ -14,6 +14,7 @@ import {
 	eventStartsBefore,
 	getCalendarWeek,
 	getDiffInDays,
+	getDiffInHours,
 	getEventColor,
 	getEventEnd,
 	getEventStart,
@@ -40,7 +41,6 @@ import {logins} from "../../api/main/LoginController"
 import type {CalendarViewTypeEnum} from "./CalendarView"
 import {CalendarViewType, SELECTED_DATE_INDICATOR_THICKNESS} from "./CalendarView"
 import {Time} from "../../api/common/utils/Time"
-import {handleEntityDragged} from "../../gui/base/GuiUtils"
 
 export type Attrs = {
 	selectedDate: Date,
@@ -259,7 +259,7 @@ export class CalendarWeekView implements MComponent<Attrs> {
 							onBubbleDestroyed: dom => {
 								this._bubbleDoms.delete(dom)
 							},
-							day: attrs.selectedDate
+							day: weekday
 						}))
 					})
 				)
@@ -278,9 +278,8 @@ export class CalendarWeekView implements MComponent<Attrs> {
 			const weekEvents = attrs.eventsForDays.get(wd.getTime()) || []
 			weekEvents.forEach((event) => {
 				if (!attrs.hiddenCalendars.has(neverNull(event._ownerGroup)) && !eventsForWeek.has(event)) {
-					const isShort = !isAllDayEvent(event)
-						&& !eventStartsBefore(weekdayDate, getTimeZone(), event)
-						&& !eventEndsAfterDay(weekdayDate, getTimeZone(), event)
+					//short -> shorter than 24 hours
+					const isShort = !isAllDayEvent(event) && getDiffInHours(event.startTime, event.endTime) < 24
 					if (isShort) {
 						eventsForWeekDay.push(event)
 					} else {
@@ -331,12 +330,7 @@ export class CalendarWeekView implements MComponent<Attrs> {
 						color: getEventColor(event, attrs.groupColors),
 						onEventClicked: attrs.onEventClicked,
 						showTime: getTimeTextFormatForLongEventOnWeek(event, firstDayOfWeek, lastDayOfWeek, zone),
-						user: logins.getUserController().user,
-						onDragStart: (dragEvent) => {
-							handleEntityDragged(event, dragEvent)
-							deactivateBubblePointerEvents(this._bubbleDoms)
-						},
-						onDragEnd: () => activateBubblePointerEvents(this._bubbleDoms)
+						user: logins.getUserController().user
 
 					}))
 				}))
