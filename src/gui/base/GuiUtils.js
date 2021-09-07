@@ -14,6 +14,7 @@ import {assertNotNull, mapLazily, noOp} from "../../api/common/utils/Utils"
 import {Dialog} from "./Dialog"
 import {logins} from "../../api/main/LoginController"
 import type {AllIconsEnum} from "./Icon"
+import type {ListElement, Element} from "../../api/common/utils/EntityUtils"
 
 // TODO Use DropDownSelectorN
 export function createCountryDropdown(selectedCountry: Stream<?Country>, helpLabel?: lazy<string>, label: TranslationKey | lazy<string> = "invoiceCountry_label"): DropDownSelector<?Country> {
@@ -162,4 +163,11 @@ export function entityDraggedHandler(id: Id | IdTuple): DragEventHandler {
 		? id.join(",")
 		: id
 	return ev => ev.dataTransfer?.setData("text", idString)
+}
+
+export function handleEntityDragged(entity: Element | ListElement, ev: DragEvent) {
+	const idString = entity._id instanceof Array
+		? entity._id.join(",")
+		: entity._id
+	ev.dataTransfer?.setData("text", idString)
 }

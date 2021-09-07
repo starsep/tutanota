@@ -37,8 +37,7 @@ import type {CalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
 import {logins} from "../../api/main/LoginController"
 import type {CalendarViewTypeEnum} from "./CalendarView"
 import {CalendarViewType, SELECTED_DATE_INDICATOR_THICKNESS} from "./CalendarView"
-import {getLetId} from "../../api/common/utils/EntityUtils"
-import {entityDraggedHandler} from "../../gui/base/GuiUtils"
+import {handleEntityDragged} from "../../gui/base/GuiUtils"
 
 type CalendarMonthAttrs = {
 	selectedDate: Date,
@@ -66,12 +65,14 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 	_zone: string
 	_lastWidth: number
 	_lastHeight: number
+	_bubbleDoms: Set<HTMLElement>
 
 	constructor() {
 		this._resizeListener = m.redraw
 		this._zone = getTimeZone()
 		this._lastHeight = 0
 		this._lastHeight = 0
+		this._bubbleDoms = new Set()
 	}
 
 	oncreate() {
@@ -188,6 +189,11 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 					ev.preventDefault()
 				},
 				ondrop: ev => {
+					for (let dom of this._bubbleDoms) {
+						dom.style.pointerEvents = "auto"
+						dom.style.opacity = "1"
+					}
+
 					const transferredId = ev.dataTransfer?.getData("text")
 					if (transferredId != null) {
 						ev.preventDefault()
@@ -259,7 +265,8 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 								height: px(CALENDAR_EVENT_HEIGHT),
 								left: px(position.left),
 								right: px(position.right)
-							}
+							},
+							oncreate: vnode => this._bubbleDoms.add(vnode.dom),
 						}, this._renderEvent(attrs, event, eventStart < firstDayOfWeek, firstDayOfNextWeek < eventEnd))
 
 					} else {
@@ -329,7 +336,13 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 			onEventClicked: (e, domEvent) => {
 				attrs.onEventClicked(event, domEvent)
 			},
-			onDragStart: entityDraggedHandler(getLetId(event))
+			onDragStart: (dragEvent) => {
+				handleEntityDragged(event, dragEvent)
+				for (let dom of this._bubbleDoms) {
+					dom.style.pointerEvents = "none"
+					dom.style.opacity = "0.7"
+				}
+			}
 		})
 	}
 

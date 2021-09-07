@@ -17,7 +17,7 @@ export type CalendarEventBubbleAttrs = {
 	noBorderRight?: boolean,
 	noBorderLeft?: boolean,
 	verticalPadding?: number,
-	onDragStart?: DragEvent => *
+	onDragStart?: DragEvent => *,
 }
 
 

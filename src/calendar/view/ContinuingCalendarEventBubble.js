@@ -15,7 +15,7 @@ type ContinuingCalendarEventBubbleAttrs = {|
 	onEventClicked: (event: CalendarEvent, domEvent: Event) => mixed,
 	showTime: ?EventTextTimeOptionEnum,
 	user: User,
-	onDragStart?: DragEvent => *
+	onDragStart?: DragEvent => *,
 |}
 
 export class ContinuingCalendarEventBubble implements MComponent<ContinuingCalendarEventBubbleAttrs> {
@@ -40,7 +40,7 @@ export class ContinuingCalendarEventBubble implements MComponent<ContinuingCalen
 					noBorderLeft: attrs.startsBefore,
 					noBorderRight: attrs.endsAfter,
 					hasAlarm: hasAlarmsForTheUser(attrs.user, attrs.event),
-					onDragStart: attrs.onDragStart
+					onDragStart: attrs.onDragStart,
 				}),
 			),
 			attrs.endsAfter
