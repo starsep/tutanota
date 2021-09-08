@@ -65,7 +65,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 	_zone: string
 	_lastWidth: number
 	_lastHeight: number
-	_currentlyDraggedEvent: ?EventDragHandler = null
+	_eventDragHandler: EventDragHandler
 	_dayUnderMouse: Date
 
 	constructor(vnode: Vnode<CalendarMonthAttrs>) {
@@ -74,6 +74,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 		this._lastHeight = 0
 		this._lastHeight = 0
 		this._dayUnderMouse = vnode.attrs.selectedDate //TODO rather do nothing if null?
+		this._eventDragHandler = new EventDragHandler()
 	}
 
 	oncreate() {
@@ -123,7 +124,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 			this._lastWidth = dom.offsetWidth
 			this._lastHeight = dom.offsetHeight
 		}
-		return different || this._currentlyDraggedEvent != null
+		return different || this._eventDragHandler.isDragging // FIXME diff properly?
 	}
 
 	_renderCalendar(attrs: CalendarMonthAttrs, date: Date, zone: string): Children {
@@ -156,23 +157,9 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 						this._monthDom = vnode.dom
 					}
 				},
-				onmousemove: () => {
-					this._currentlyDraggedEvent?.handleDrag(this.getDayUnderMouse())
-				},
-				onmouseup: () => {
-					const current = this._currentlyDraggedEvent
-					if (current != null) {
-						attrs.onEventMoved(current.originalEvent._id, current.eventClone.startTime)
-					}
-					this._currentlyDraggedEvent = null
-				},
-				onmouseleave: () => {
-					const current = this._currentlyDraggedEvent
-					if (current != null) {
-						attrs.onEventMoved(current.originalEvent._id, current.eventClone.startTime)
-					}
-					this._currentlyDraggedEvent = null
-				},
+				onmousemove: () => this._eventDragHandler.handleDrag(this.getDayUnderMouse())				,
+				onmouseup: () => this._eventDragHandler.endDrag(this.getDayUnderMouse(), attrs.onEventMoved),
+				onmouseleave: () => () => this._eventDragHandler.endDrag(this.getDayUnderMouse(), attrs.onEventMoved),
 			}, weeks.map((week) => {
 				return m(".flex.flex-grow.rel", [
 					week.map((d, i) => this._renderDay(attrs, d, today, i)),
@@ -240,7 +227,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 			const dayEvents = attrs.eventsForDays.get(day.date.getTime())
 			if (dayEvents != null) {
 				for (let event of dayEvents) {
-					if (!attrs.hiddenCalendars.has(neverNull(event._ownerGroup)) && this._currentlyDraggedEvent?.originalEvent !== event) {
+					if (!attrs.hiddenCalendars.has(neverNull(event._ownerGroup)) && this._eventDragHandler.originalEvent !== event) {
 						events.add(event)
 					}
 				}
@@ -250,9 +237,9 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 		const firstDayOfWeek = week[0].date
 		const lastDayOfWeek = lastThrow(week)
 
-		if (this._currentlyDraggedEvent
-			&& isEventBetweenDays(this._currentlyDraggedEvent.eventClone, firstDayOfWeek, lastDayOfWeek.date, zone)) {
-			events.add(this._currentlyDraggedEvent.eventClone)
+		const temporaryEvent = this._eventDragHandler.temporaryEvent
+		if (temporaryEvent && isEventBetweenDays(temporaryEvent, firstDayOfWeek, lastDayOfWeek.date, zone)) {
+			events.add(temporaryEvent)
 		}
 
 		const dayWidth = this._getWidthForDay()
@@ -320,7 +307,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 				left: px(position.left),
 				right: px(position.right)
 			},
-			onmousedown: () => this._currentlyDraggedEvent = new EventDragHandler(event, this._dayUnderMouse),
+			onmousedown: () => this._eventDragHandler.prepareDrag(event, this._dayUnderMouse),
 		}, m(ContinuingCalendarEventBubble, {
 			event: event,
 			startsBefore: eventStart < firstDayOfWeek,
@@ -331,8 +318,8 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 			onEventClicked: (e, domEvent) => {
 				attrs.onEventClicked(event, domEvent)
 			},
-			fadeIn: this._currentlyDraggedEvent == null,
-			opacity: this._currentlyDraggedEvent?.eventClone === event ? .7 : 1
+			fadeIn: !this._eventDragHandler.isDragging,
+			opacity: this._eventDragHandler.temporaryEvent === event ? .7 : 1
 		}))
 	}
 
