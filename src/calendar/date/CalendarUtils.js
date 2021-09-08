@@ -1,5 +1,5 @@
 //@flow
-import {getStartOfDay, incrementDate, isSameDay, isSameDayOfDate, isValidDate} from "../../api/common/utils/DateUtils"
+import {getEndOfDay, getStartOfDay, incrementDate, isSameDay, isSameDayOfDate, isValidDate} from "../../api/common/utils/DateUtils"
 import type {
 	AlarmIntervalEnum,
 	CalendarAttendeeStatusEnum,
@@ -52,15 +52,23 @@ export function eventStartsBefore(currentDate: Date, zone: string, event: Calend
 	return getEventStart(event, zone).getTime() < currentDate.getTime()
 }
 
-export function eventStartsBeforeOrOnDay(currentDate: Date, zone: string, event: CalendarEvent): boolean {
-	return getEventStart(event, zone).getTime() <= currentDate.getTime()
+export function eventEndsBefore(date: Date, zone: string, event: CalendarEvent): boolean {
+	return getEventEnd(event, zone).getTime() < date.getTime()
+}
+
+export function eventStartsAfter(date: Date, zone: string, event: CalendarEvent): boolean {
+	return getEventStart(event, zone).getTime() > date.getTime()
 }
 
 export function eventEndsAfterDay(currentDate: Date, zone: string, event: CalendarEvent): boolean {
 	return getEventEnd(event, zone).getTime() > getStartOfNextDayWithZone(currentDate, zone).getTime()
 }
 
-export function eventEndsAfterOrOnDay(currentDate: Date, zone: string, event: CalendarEvent): boolean {
+export function eventStartsBeforeOrOn(currentDate: Date, zone: string, event: CalendarEvent): boolean {
+	return getEventStart(event, zone).getTime() <= currentDate.getTime()
+}
+
+export function eventEndsAfterOrOn(currentDate: Date, zone: string, event: CalendarEvent): boolean {
 	return getEventEnd(event, zone).getTime() >= getStartOfNextDayWithZone(currentDate, zone).getTime()
 }
 
@@ -826,8 +834,8 @@ export function getTimeTextFormatForLongEventOnDay(ev: CalendarEvent, day: Date,
 }
 
 export function getTimeTextFormatForLongEventOnWeek(ev: CalendarEvent, startDay: Date, endDay: Date, zone: string): ?EventTextTimeOptionEnum {
-	const startsBeforeWeek = eventStartsBeforeOrOnDay(startDay, zone, ev)
-	const endsAfterWeek = eventEndsAfterOrOnDay(endDay, zone, ev)
+	const startsBeforeWeek = eventStartsBeforeOrOn(startDay, zone, ev)
+	const endsAfterWeek = eventEndsAfterOrOn(endDay, zone, ev)
 
 	if (startsBeforeWeek && endsAfterWeek) {
 		return EventTextTimeOption.ALL_WEEK
@@ -868,4 +876,12 @@ export function activateBubblePointerEvents(bubbleDoms: Iterable<HTMLElement>) {
 		dom.style.pointerEvents = "auto"
 		dom.style.opacity = "1"
 	}
+}
+
+/**
+ * Check if an event occurs during some week, either partially or entirely
+ * Expects that firstDayOfWeek is before lastDayOfWeek, and that event starts before it ends, otherwise result is invalid
+ */
+export function isEventInWeek(event: CalendarEvent, firstDayOfWeek: Date, lastDayOfWeek: Date, zone: string): boolean {
+	return !(eventEndsBefore(firstDayOfWeek, zone, event) || eventStartsAfter(getEndOfDay(lastDayOfWeek), zone, event))
 }

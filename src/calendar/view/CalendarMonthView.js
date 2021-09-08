@@ -19,6 +19,7 @@ import {
 	getStartOfTheWeekOffset,
 	getTimeZone,
 	getWeekNumber,
+	isEventInWeek,
 	layOutEvents
 } from "../date/CalendarUtils"
 import {incrementDate, isSameDay} from "../../api/common/utils/DateUtils"
@@ -34,6 +35,7 @@ import {Icon} from "../../gui/base/Icon"
 import {Icons} from "../../gui/base/icons/Icons"
 import {PageView} from "../../gui/base/PageView"
 import type {CalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
+import {createCalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
 import {logins} from "../../api/main/LoginController"
 import type {CalendarViewTypeEnum} from "./CalendarView"
 import {CalendarViewType, SELECTED_DATE_INDICATOR_THICKNESS} from "./CalendarView"
@@ -49,7 +51,7 @@ type CalendarMonthAttrs = {
 	startOfTheWeek: WeekStartEnum,
 	groupColors: {[Id]: string},
 	hiddenCalendars: Set<Id>,
-	onEventMoved: (IdTuple, Date) => *
+	onEventMoved: (eventId: IdTuple, newStartDate: Date) => *
 }
 
 type SimplePosRect = {top: number, left: number, right: number}
@@ -58,8 +60,12 @@ const dayHeight = () => styles.isDesktopLayout() ? 32 : 24
 const spaceBetweenEvents = () => styles.isDesktopLayout() ? 2 : 1
 
 type EventDragData = {
-	event: CalendarEvent,
-	originDay: Date
+	originalEvent: CalendarEvent,
+	mouseOriginDay: Date,
+	eventOriginalStart: Date,
+	eventOriginalEnd: Date,
+
+	eventClone: CalendarEvent
 }
 
 export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecycle<CalendarMonthAttrs> {
@@ -127,7 +133,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 			this._lastWidth = dom.offsetWidth
 			this._lastHeight = dom.offsetHeight
 		}
-		return different
+		return different || this._currentlyDraggedEvent != null
 	}
 
 	_renderCalendar(attrs: CalendarMonthAttrs, date: Date, zone: string): Children {
@@ -160,10 +166,10 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 						this._monthDom = vnode.dom
 					}
 				},
-				// onmousemove: () => this.eventDragMove(),
-				// // FIXME this never gets called if the mouse leaves the calendar perimiter
-				// //       Use onmouseout
-				// onmouseup: () => this.eventDragEnd(),
+				onmousemove: () => this.eventDragMove(),
+				// FIXME this never gets called if the mouse leaves the calendar perimiter
+				//       Use onmouseout
+				onmouseup: () => this.eventDragEnd(attrs.onEventMoved),
 			}, weeks.map((week) => {
 				return m(".flex.flex-grow.rel", [
 					week.map((d, i) => this._renderDay(attrs, d, today, i)),
@@ -199,7 +205,6 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 				},
 				ondragover: ev => {
 					this._dayUnderMouse = d.date
-					console.log("dragover", this._dayUnderMouse)
 					ev.preventDefault()
 				},
 				ondrop: ev => {
@@ -236,16 +241,25 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 
 	_renderWeekEvents(attrs: CalendarMonthAttrs, week: Array<CalendarDay>, zone: string): Children {
 		const events = new Set()
-		week.forEach((day) => {
+		for (let day of week) {
 			const dayEvents = attrs.eventsForDays.get(day.date.getTime())
-			dayEvents && dayEvents.forEach(e => {
-				if (!attrs.hiddenCalendars.has(neverNull(e._ownerGroup))) events.add(e)
-			})
-		})
-
+			if (dayEvents != null) {
+				for (let event of dayEvents) {
+					if (!attrs.hiddenCalendars.has(neverNull(event._ownerGroup)) && this._currentlyDraggedEvent?.originalEvent !== event) {
+						events.add(event)
+					}
+				}
+			}
+		}
 
 		const firstDayOfWeek = week[0].date
 		const lastDayOfWeek = lastThrow(week)
+
+		if (this._currentlyDraggedEvent
+			&& isEventInWeek(this._currentlyDraggedEvent.eventClone, firstDayOfWeek, lastDayOfWeek.date, zone)) {
+			events.add(this._currentlyDraggedEvent.eventClone)
+		}
+
 		const dayWidth = this._getWidthForDay()
 		const weekHeight = this._getHeightForWeek()
 		const eventHeight = (size.calendar_line_height + spaceBetweenEvents()) // height + border
@@ -314,7 +328,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 			oncreate: vnode => {
 				this._bubbleDoms.add(vnode.dom)
 			},
-			ondragstart: () => this.eventDragStart(event),
+			onmousedown: () => this.eventDragStart(event),
 		}, m(ContinuingCalendarEventBubble, {
 			event: event,
 			startsBefore: eventStart < firstDayOfWeek,
@@ -325,9 +339,6 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 			onEventClicked: (e, domEvent) => {
 				attrs.onEventClicked(event, domEvent)
 			},
-			onDragStart: () => {
-				this.eventDragStart(event)
-			}
 		}))
 	}
 
@@ -369,37 +380,56 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 	}
 
 	eventDragStart(calendarEvent: CalendarEvent,) {
-		for (let dom of this._bubbleDoms) {
-			dom.style.pointerEvents = "none"
-			dom.style.opacity = "0.7"
-		}
-
 		this._currentlyDraggedEvent = {
-			event: calendarEvent,
-			originDay: neverNull(this.getDayUnderMouse())
+			originalEvent: calendarEvent,
+			mouseOriginDay: neverNull(this.getDayUnderMouse()),
+			eventOriginalStart: new Date(calendarEvent.startTime),
+			eventOriginalEnd: new Date(calendarEvent.endTime),
+
+			eventClone: createCalendarEvent({
+				_id: calendarEvent._id,
+				startTime: new Date(calendarEvent.startTime),
+				endTime: new Date(calendarEvent.endTime),
+				summary: calendarEvent.summary
+			})
 		}
 	}
 
-	eventDragEnd(callback: (IdTuple, Date) => *) {
-		/**
-		 *
-		 */
+	eventDragMove() {
 
+		const current = this._currentlyDraggedEvent
+		if (current != null) {
+
+			for (let dom of this._bubbleDoms) {
+				dom.style.pointerEvents = "none"
+				dom.style.opacity = "0.7"
+			}
+			const dayUnderMouse = neverNull(this.getDayUnderMouse())
+			const mouseDiff = getDiffInDays(current.mouseOriginDay, dayUnderMouse)
+			const newStartTime = new Date(current.eventOriginalStart)
+			newStartTime.setDate(newStartTime.getDate() + mouseDiff)
+
+			const newEndTime = new Date(current.eventOriginalEnd)
+			newEndTime.setDate(newEndTime.getDate() + mouseDiff)
+
+			current.eventClone.startTime = newStartTime
+			current.eventClone.endTime = newEndTime
+
+			// TODO check if the mouse has moved to a new day
+			m.redraw()
+		}
+	}
+
+	eventDragEnd(updateEventCallback: (eventId: IdTuple, newStartDate: Date) => *) {
 		for (let dom of this._bubbleDoms) {
 			dom.style.pointerEvents = "auto"
 			dom.style.opacity = "1"
 		}
 
-		const currentDrag = this._currentlyDraggedEvent
+		const current = this._currentlyDraggedEvent
 		this._currentlyDraggedEvent = null
-		if (currentDrag != null) {
-
-			const dayUnderMouse = neverNull(this.getDayUnderMouse())
-			const mouseDiff = getDiffInDays(currentDrag.originDay, dayUnderMouse)
-			const newDate = new Date(currentDrag.event.startTime)
-			newDate.setDate(currentDrag.event.startTime.getDate() + mouseDiff)
-
-			callback(currentDrag.event._id, newDate)
+		if (current != null) {
+			updateEventCallback(current.originalEvent._id, current.eventClone.startTime)
 		}
 	}
 
