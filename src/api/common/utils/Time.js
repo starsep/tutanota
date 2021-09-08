@@ -43,4 +43,11 @@ export class Time {
 		const minutes = pad(this.minutes, 2)
 		return `${hours}:${minutes}`
 	}
+
+	toObject(): {hours: number, minutes: number} {
+		return {
+			hours: this.hours,
+			minutes: this.minutes
+		}
+	}
 }

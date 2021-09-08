@@ -190,8 +190,8 @@ o.spec("CalendarEventViewModel", function () {
 		o(viewModel.summary()).equals(existingEvent.summary)
 		o(viewModel.startDate.toISOString()).equals(DateTime.fromObject({year: 2020, month: 5, day: 26, zone}).toJSDate().toISOString())
 		o(viewModel.endDate.toISOString()).equals(DateTime.fromObject({year: 2020, month: 5, day: 26, zone}).toJSDate().toISOString())
-		o(viewModel.startTime).equals("12:00")
-		o(viewModel.endTime).equals("13:00")
+		o(viewModel.startTime.toObject()).deepEquals({hours: 12, minutes: 0})
+		o(viewModel.endTime.toObject()).deepEquals({hours: 13, minutes: 0})
 		o(viewModel.note).equals(existingEvent.description)
 		o(viewModel.location()).equals(existingEvent.location)
 		o(viewModel.isReadOnlyEvent()).equals(false)
@@ -1230,7 +1230,7 @@ o.spec("CalendarEventViewModel", function () {
 			// No hours because it's a "date", not "time" field.
 			o(viewModel.endDate.toISOString())
 				.equals(DateTime.fromObject({year: 2020, month: 6, day: 11, zone}).toJSDate().toISOString())
-			o(viewModel.endTime).equals("15:00")
+			o(viewModel.endTime.toObject()).deepEquals({hours: 15, minutes: 0})
 		})
 
 		o("date adjusted backwards", async function () {
@@ -1245,7 +1245,7 @@ o.spec("CalendarEventViewModel", function () {
 			// No hours because it's a "date", not "time" field.
 			o(viewModel.endDate.toISOString())
 				.equals(DateTime.fromObject({year: 2020, month: 6, day: 7, zone}).toJSDate().toISOString())
-			o(viewModel.endTime).equals("15:00")
+			o(viewModel.endTime.toObject()).deepEquals({hours: 15, minutes: 0})
 		})
 	})
 
@@ -1262,7 +1262,7 @@ o.spec("CalendarEventViewModel", function () {
 			// No hours because it's a "date", not "time" field.
 			o(viewModel.endDate.toISOString())
 				.equals(DateTime.fromObject({year: 2020, month: 6, day: 8, zone}).toJSDate().toISOString())
-			o(viewModel.endTime.to24HourString()).equals("16:00")
+			o(viewModel.endTime.to24HourString()).deepEquals("16:00")
 		})
 
 		o("time adjusted backward", async function () {
@@ -1277,7 +1277,7 @@ o.spec("CalendarEventViewModel", function () {
 			// No hours because it's a "date", not "time" field.
 			o(viewModel.endDate.toISOString())
 				.equals(DateTime.fromObject({year: 2020, month: 6, day: 8, zone}).toJSDate().toISOString())
-			o(viewModel.endTime).equals("14:00")
+			o(viewModel.endTime.toObject()).deepEquals({hours: 14, minutes: 0})
 		})
 
 		o("time not adjust when different day", async function () {
