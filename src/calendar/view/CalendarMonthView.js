@@ -157,7 +157,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 						this._monthDom = vnode.dom
 					}
 				},
-				onmousemove: () => this._eventDragHandler.handleDrag(this.getDayUnderMouse())				,
+				onmousemove: () => this._eventDragHandler.handleDrag(this.getDayUnderMouse()),
 				onmouseup: () => this._eventDragHandler.endDrag(this.getDayUnderMouse(), attrs.onEventMoved),
 				onmouseleave: () => () => this._eventDragHandler.endDrag(this.getDayUnderMouse(), attrs.onEventMoved),
 			}, weeks.map((week) => {
@@ -319,7 +319,8 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 				attrs.onEventClicked(event, domEvent)
 			},
 			fadeIn: !this._eventDragHandler.isDragging,
-			opacity: this._eventDragHandler.temporaryEvent === event ? .7 : 1
+			opacity: this._eventDragHandler.temporaryEvent === event ? .7 : 1,
+			enablePointerEvents: !this._eventDragHandler.isDragging
 		}))
 	}
 

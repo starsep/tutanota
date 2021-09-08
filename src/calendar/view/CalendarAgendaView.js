@@ -103,7 +103,8 @@ export class CalendarAgendaView implements MComponent<Attrs> {
 										height: 38,
 										verticalPadding: 2,
 										fadeIn: true,
-										opacity: 1
+										opacity: 1,
+										enablePointerEvents: true
 									}))
 								}))
 						])

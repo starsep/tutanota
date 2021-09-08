@@ -18,7 +18,7 @@ import {
 	getTimeZone,
 	getWeekNumber
 } from "../date/CalendarUtils"
-import {downcast, neverNull} from "../../api/common/utils/Utils"
+import {neverNull} from "../../api/common/utils/Utils"
 import {CalendarDayEventsView, calendarDayTimes} from "./CalendarDayEventsView"
 import {theme} from "../../gui/theme"
 import {px, size} from "../../gui/size"
@@ -266,7 +266,8 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 					showTime: EventTextTimeOption.ALL_DAY,
 					user: logins.getUserController().user,
 					fadeIn: true,
-					opacity: 1
+					opacity: 1,
+					enablePointerEvents: true
 				})
 			})),
 			m(".calendar-hour-margin.pr-l", longEvents.map(e => m(ContinuingCalendarEventBubble, {
@@ -278,7 +279,8 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 				showTime: getTimeTextFormatForLongEventOnDay(e, date, zone),
 				user: logins.getUserController().user,
 				fadeIn: true,
-				opacity: 1
+				opacity: 1,
+				enablePointerEvents: true
 			}))),
 			mainPageEvents.allDayEvents.length > 0 || mainPageEvents.longEvents.length > 0
 				? m(".mt-s")

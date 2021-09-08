@@ -139,7 +139,8 @@ export class CalendarDayEventsView implements MComponent<Attrs> {
 			hasAlarm: hasAlarmsForTheUser(logins.getUserController().user, ev),
 			verticalPadding: padding,
 			fadeIn: !attrs.eventBeingDragged,
-			opacity: attrs.eventBeingDragged === ev ? .7 : 1
+			opacity: attrs.eventBeingDragged === ev ? .7 : 1,
+			enablePointerEvents: !attrs.eventBeingDragged
 		}))
 	}
 

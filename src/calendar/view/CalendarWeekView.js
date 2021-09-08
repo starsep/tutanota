@@ -315,6 +315,7 @@ export class CalendarWeekView implements MComponent<Attrs> {
 		const zone = getTimeZone()
 		const children = layOutEvents(Array.from(eventsForWeek), zone, (columns) => {
 			maxColumns = Math.max(maxColumns, columns.length)
+			console.log("IS DRAGGING: ", this._eventDragHandler.isDragging)
 			return columns.map((rows, c) =>
 				rows.map((event) => {
 					const zone = getTimeZone()
@@ -341,7 +342,8 @@ export class CalendarWeekView implements MComponent<Attrs> {
 						showTime: getTimeTextFormatForLongEventOnWeek(event, firstDayOfWeek, lastDayOfWeek, zone),
 						user: logins.getUserController().user,
 						fadeIn: true,
-						opacity: 1
+						opacity: 1,
+						enablePointerEvents: !this._eventDragHandler.isDragging
 					}))
 				}))
 		}, true)
