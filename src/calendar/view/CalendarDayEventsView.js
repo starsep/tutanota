@@ -21,7 +21,6 @@ import {downcast, neverNull} from "../../api/common/utils/Utils"
 import type {CalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
 import {logins} from "../../api/main/LoginController"
 import {isAllDayEvent} from "../../api/common/utils/CommonCalendarUtils"
-import {handleEntityDragged} from "../../gui/base/GuiUtils"
 
 export type Attrs = {
 	onEventClicked: (event: CalendarEvent, domEvent: Event) => mixed,
@@ -31,10 +30,6 @@ export type Attrs = {
 	onTimePressed: (hours: number, minutes: number) => mixed,
 	onTimeContextPressed: (hours: number, minutes: number) => mixed,
 	onEventMoved: (IdTuple, Date) => *,
-	onDragStart: DragEvent => *,
-	onDragEnd: DragEvent => *,
-	onBubbleCreated: HTMLElement => *,
-	onBubbleDestroyed: HTMLElement => *,
 	day: Date
 }
 
@@ -140,8 +135,6 @@ export class CalendarDayEventsView implements MComponent<Attrs> {
 				top: px(startTime / DAY_IN_MILLIS * allHoursHeight),
 				height: px(height)
 			},
-			oncreate: vnode => attrs.onBubbleCreated(vnode.dom),
-			onbeforeremove: vnode => attrs.onBubbleDestroyed(vnode.dom),
 		}, m(CalendarEventBubble, {
 			text: ev.summary,
 			secondLineText: !isAllDayEvent(ev) ? formatEventTime(ev, getTimeTextFormatForLongEventOnDay(ev, attrs.day, zone)) : null,
@@ -150,11 +143,6 @@ export class CalendarDayEventsView implements MComponent<Attrs> {
 			height: height - padding,
 			hasAlarm: hasAlarmsForTheUser(logins.getUserController().user, ev),
 			verticalPadding: padding,
-			onDragStart: dragEvent => {
-				handleEntityDragged(ev, dragEvent)
-				attrs.onDragStart?.(dragEvent)
-			},
-			onDragEnd: attrs.onDragEnd,
 			fadeIn: true,
 			opacity: 1
 		}))
