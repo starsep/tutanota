@@ -143,20 +143,20 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 				},
 			}, [
 				m(".flex.col", calendarDayTimes.map(time => m(".calendar-hour.flex", {
-						onclick: (e) => {
-							e.stopPropagation()
-							vnode.attrs.onNewEvent(time)
-						},
-						ondragover: ev => ev.preventDefault(),
-						ondrop: (ev: DragEvent) => {
-							const id = ev.dataTransfer?.getData("text")
-							if (!!id) {
-								ev.preventDefault()
-								// calendar day events view doesn't keep track of which day it is rendering, so we need to replace that info
-								const actualDate = combineDateWithTime(date, Time.fromDate(time))
-								vnode.attrs.onEventMoved(downcast(id.split(",")), actualDate)
-							}
-						}
+						// onclick: (e) => {
+						// 	e.stopPropagation()
+						// 	vnode.attrs.onNewEvent(time)
+						// },
+						// ondragover: ev => ev.preventDefault(),
+						// ondrop: (ev: DragEvent) => {
+						// 	const id = ev.dataTransfer?.getData("text")
+						// 	if (!!id) {
+						// 		ev.preventDefault()
+						// 		// calendar day events view doesn't keep track of which day it is rendering, so we need to replace that info
+						// 		const actualDate = combineDateWithTime(date, time)
+						// 		vnode.attrs.onEventMoved(downcast(id.split(",")), actualDate)
+						// 	}
+						// }
 					},
 					m(".pt.pl-s.pr-s.center.small", {
 						style: {
@@ -164,7 +164,7 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 							height: px(size.calendar_hour_height),
 							'border-right': `2px solid ${theme.content_border}`,
 						},
-					}, formatTime(time))
+					}, formatTime(time.toDate()))
 					)
 				)),
 				m(".flex-grow", m(CalendarDayEventsView, {
@@ -191,7 +191,10 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 					onDragEnd: () => activateBubblePointerEvents(this._bubbleDoms),
 					onBubbleCreated: bubble => this._bubbleDoms.add(bubble),
 					onBubbleDestroyed: bubble => this._bubbleDoms.delete(bubble),
-					day: vnode.attrs.selectedDate
+					day: vnode.attrs.selectedDate,
+					setCurrentDraggedEvent: () => { throw new Error("TODO") },
+					eventBeingDragged: null,
+					setTimeUnderMouse: () => { throw new Error("TODO") }
 				})),
 			]),
 

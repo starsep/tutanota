@@ -10,7 +10,7 @@ import {
 	getDiffInHours,
 	getStartOfWeek,
 	getWeekNumber,
-	isEventInWeek,
+	isEventBetweenDays,
 	prepareCalendarDescription
 } from "../../../src/calendar/date/CalendarUtils"
 import {lang} from "../../../src/misc/LanguageViewModel"
@@ -403,21 +403,21 @@ o.spec("calendar utils tests", function () {
 			const firstDayOfWeek = new Date(2021, 8, 6)
 			const lastDayOfWeek = new Date(2021, 8, 12)
 
-			o(isEventInWeek(eventOn(new Date(2021, 8, 5, 13, 30), new Date(2021, 8, 6, 13, 30)), firstDayOfWeek, lastDayOfWeek, zone)).equals(true)(`starts before, ends first day`)
-			o(isEventInWeek(eventOn(new Date(2021, 8, 5, 13, 30), new Date(2021, 8, 12, 13, 30)), firstDayOfWeek, lastDayOfWeek, zone)).equals(true)(`starts before, ends last day`)
+			o(isEventBetweenDays(eventOn(new Date(2021, 8, 5, 13, 30), new Date(2021, 8, 6, 13, 30)), firstDayOfWeek, lastDayOfWeek, zone)).equals(true)(`starts before, ends first day`)
+			o(isEventBetweenDays(eventOn(new Date(2021, 8, 5, 13, 30), new Date(2021, 8, 12, 13, 30)), firstDayOfWeek, lastDayOfWeek, zone)).equals(true)(`starts before, ends last day`)
 
-			o(isEventInWeek(eventOn(new Date(2021, 8, 6, 13, 30), new Date(2021, 8, 6, 13, 30)), firstDayOfWeek, lastDayOfWeek, zone)).equals(true)(`starts first day, ends first day`)
-			o(isEventInWeek(eventOn(new Date(2021, 8, 6, 13, 30), new Date(2021, 8, 12, 13, 30)), firstDayOfWeek, lastDayOfWeek, zone)).equals(true)(`starts first day, ends last day`)
-			o(isEventInWeek(eventOn(new Date(2021, 8, 6, 13, 30), new Date(2021, 8, 13, 13, 30)), firstDayOfWeek, lastDayOfWeek, zone)).equals(true)(`starts first day, ends after`)
+			o(isEventBetweenDays(eventOn(new Date(2021, 8, 6, 13, 30), new Date(2021, 8, 6, 13, 30)), firstDayOfWeek, lastDayOfWeek, zone)).equals(true)(`starts first day, ends first day`)
+			o(isEventBetweenDays(eventOn(new Date(2021, 8, 6, 13, 30), new Date(2021, 8, 12, 13, 30)), firstDayOfWeek, lastDayOfWeek, zone)).equals(true)(`starts first day, ends last day`)
+			o(isEventBetweenDays(eventOn(new Date(2021, 8, 6, 13, 30), new Date(2021, 8, 13, 13, 30)), firstDayOfWeek, lastDayOfWeek, zone)).equals(true)(`starts first day, ends after`)
 
-			o(isEventInWeek(eventOn(new Date(2021, 8, 12, 13, 30), new Date(2021, 8, 12, 13, 30)), firstDayOfWeek, lastDayOfWeek, zone)).equals(true)(`starts last day, ends last day`)
-			o(isEventInWeek(eventOn(new Date(2021, 8, 12, 13, 30), new Date(2021, 8, 13, 13, 30)), firstDayOfWeek, lastDayOfWeek, zone)).equals(true)(`starts last day, ends after`)
+			o(isEventBetweenDays(eventOn(new Date(2021, 8, 12, 13, 30), new Date(2021, 8, 12, 13, 30)), firstDayOfWeek, lastDayOfWeek, zone)).equals(true)(`starts last day, ends last day`)
+			o(isEventBetweenDays(eventOn(new Date(2021, 8, 12, 13, 30), new Date(2021, 8, 13, 13, 30)), firstDayOfWeek, lastDayOfWeek, zone)).equals(true)(`starts last day, ends after`)
 
 
-			o(isEventInWeek(eventOn(new Date(2021, 8, 5, 13, 30), new Date(2021, 8, 13, 13, 30)), firstDayOfWeek, lastDayOfWeek, zone)).equals(true)(`starts before, ends after`)
+			o(isEventBetweenDays(eventOn(new Date(2021, 8, 5, 13, 30), new Date(2021, 8, 13, 13, 30)), firstDayOfWeek, lastDayOfWeek, zone)).equals(true)(`starts before, ends after`)
 
-			o(isEventInWeek(eventOn(new Date(2021, 8, 5, 13, 30), new Date(2021, 8, 5, 13, 30)), firstDayOfWeek, lastDayOfWeek, zone)).equals(false)(`starts before, ends before`)
-			o(isEventInWeek(eventOn(new Date(2021, 8, 13, 13, 30), new Date(2021, 8, 13, 13, 30)), firstDayOfWeek, lastDayOfWeek, zone)).equals(false)(`starts after, ends after`)
+			o(isEventBetweenDays(eventOn(new Date(2021, 8, 5, 13, 30), new Date(2021, 8, 5, 13, 30)), firstDayOfWeek, lastDayOfWeek, zone)).equals(false)(`starts before, ends before`)
+			o(isEventBetweenDays(eventOn(new Date(2021, 8, 13, 13, 30), new Date(2021, 8, 13, 13, 30)), firstDayOfWeek, lastDayOfWeek, zone)).equals(false)(`starts after, ends after`)
 			// Cases not mentioned are UB
 		})
 	})

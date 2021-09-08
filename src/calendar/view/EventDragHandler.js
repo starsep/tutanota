@@ -24,18 +24,11 @@ export class EventDragHandler {
 
 	handleDrag(dayUnderMouse: Date) {
 
-		const mouseDiff = getDiffInDays(this.mouseOriginDate, dayUnderMouse)
-		const newStartTime = new Date(this.originalEvent.startTime)
-		newStartTime.setDate(newStartTime.getDate() + mouseDiff)
-
-		const newEndTime = new Date(this.originalEvent.endTime)
-		newEndTime.setDate(newEndTime.getDate() + mouseDiff)
-
-		this.eventClone.startTime = newStartTime
-		this.eventClone.endTime = newEndTime
+		const mouseDiff = dayUnderMouse - this.mouseOriginDate // getDiffInDays(this.mouseOriginDate, dayUnderMouse)
+		this.eventClone.startTime = new Date(this.originalEvent.startTime.getTime() + mouseDiff)
+		this.eventClone.endTime = new Date(this.originalEvent.endTime.getTime() + mouseDiff)
 
 		// TODO check if the mouse has moved to a new day
 		m.redraw()
-
 	}
 }

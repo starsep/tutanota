@@ -17,10 +17,11 @@ import {
 	layOutEvents
 } from "../date/CalendarUtils"
 import {CalendarEventBubble} from "./CalendarEventBubble"
-import {downcast, neverNull} from "../../api/common/utils/Utils"
+import {neverNull} from "../../api/common/utils/Utils"
 import type {CalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
 import {logins} from "../../api/main/LoginController"
 import {isAllDayEvent} from "../../api/common/utils/CommonCalendarUtils"
+import {Time} from "../../api/common/utils/Time"
 
 export type Attrs = {
 	onEventClicked: (event: CalendarEvent, domEvent: Event) => mixed,
@@ -30,14 +31,13 @@ export type Attrs = {
 	onTimePressed: (hours: number, minutes: number) => mixed,
 	onTimeContextPressed: (hours: number, minutes: number) => mixed,
 	onEventMoved: (IdTuple, Date) => *,
-	day: Date
+	day: Date,
+	setCurrentDraggedEvent: (ev: CalendarEvent) => *,
+	setTimeUnderMouse: (time: Time) => *,
+	eventBeingDragged: ?CalendarEvent
 }
 
-export const calendarDayTimes: Array<Date> = numberRange(0, 23).map((n) => {
-	const d = new Date()
-	d.setHours(n, 0, 0, 0)
-	return d
-})
+export const calendarDayTimes: Array<Time> = numberRange(0, 23).map(number => new Time(number, 0))
 const allHoursHeight = size.calendar_hour_height * calendarDayTimes.length
 
 export class CalendarDayEventsView implements MComponent<Attrs> {
@@ -52,26 +52,20 @@ export class CalendarDayEventsView implements MComponent<Attrs> {
 				}
 			},
 			[
-				calendarDayTimes.map(n => m(".calendar-hour.flex", {
+				calendarDayTimes.map(time => m(".calendar-hour.flex", {
 						onclick: (e) => {
 							e.stopPropagation()
-							vnode.attrs.onTimePressed(n.getHours(), n.getMinutes())
+							vnode.attrs.onTimePressed(time.hours, time.minutes)
 						},
 						oncontextmenu: (e) => {
-							vnode.attrs.onTimeContextPressed(n.getHours(), n.getMinutes())
+							vnode.attrs.onTimeContextPressed(time.hours, time.minutes)
 							e.preventDefault()
 						},
-						ondragover: ev => ev.preventDefault(),
-						ondrop: (ev: DragEvent) => {
-							const id = ev.dataTransfer?.getData("text")
-							if (!!id) {
-								ev.preventDefault()
-								vnode.attrs.onEventMoved(downcast(id.split(",")), n)
-							}
+						onmousemove: () => {
+							vnode.attrs.setTimeUnderMouse(time)
 						}
 					},
-					)
-				),
+				)),
 				this._dayDom ? this._renderEvents(vnode.attrs, vnode.attrs.events) : null,
 				this._renderTimeIndicator(vnode.attrs),
 			])
@@ -135,6 +129,7 @@ export class CalendarDayEventsView implements MComponent<Attrs> {
 				top: px(startTime / DAY_IN_MILLIS * allHoursHeight),
 				height: px(height)
 			},
+			onmousedown: () => attrs.setCurrentDraggedEvent(ev)
 		}, m(CalendarEventBubble, {
 			text: ev.summary,
 			secondLineText: !isAllDayEvent(ev) ? formatEventTime(ev, getTimeTextFormatForLongEventOnDay(ev, attrs.day, zone)) : null,
@@ -143,8 +138,8 @@ export class CalendarDayEventsView implements MComponent<Attrs> {
 			height: height - padding,
 			hasAlarm: hasAlarmsForTheUser(logins.getUserController().user, ev),
 			verticalPadding: padding,
-			fadeIn: true,
-			opacity: 1
+			fadeIn: !attrs.eventBeingDragged,
+			opacity: attrs.eventBeingDragged === ev ? .7 : 1
 		}))
 	}
 

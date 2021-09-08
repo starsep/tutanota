@@ -19,6 +19,7 @@ import {
 	getTimeTextFormatForLongEventOnWeek,
 	getTimeZone,
 	getWeekNumber,
+	isEventBetweenDays,
 	layOutEvents
 } from "../date/CalendarUtils"
 import {CalendarDayEventsView, calendarDayTimes} from "./CalendarDayEventsView"
@@ -68,10 +69,11 @@ export class CalendarWeekView implements MComponent<Attrs> {
 	_domElements: HTMLElement[] = [];
 	_scrollPosition: number;
 	_currentlyDraggedEvent: ?EventDragHandler = null
-	_timeUnderMouse: ?Date = null
+	_timeUnderMouse: Date
 
-	constructor() {
+	constructor(vnode: Vnode<Attrs>) {
 		this._scrollPosition = size.calendar_hour_height * DEFAULT_HOUR_OF_DAY
+		this._timeUnderMouse = vnode.attrs.selectedDate
 	}
 
 	view(vnode: Vnode<Attrs>): Children {
@@ -114,6 +116,7 @@ export class CalendarWeekView implements MComponent<Attrs> {
 					this._redrawIntervalId = null
 				}
 			},
+
 		}, [
 			m(".calendar-long-events-header.mt-s.flex-fixed", {
 				style: {
@@ -214,8 +217,27 @@ export class CalendarWeekView implements MComponent<Attrs> {
 						this._scrollPosition = event.target.scrollTop
 					}
 				},
+				onmousemove: () => {
+					console.log(this.getTimeUnderMouse()    )
+					this._currentlyDraggedEvent?.handleDrag(this.getTimeUnderMouse())
+				},
+				onmouseup: () => {
+					const current = this._currentlyDraggedEvent
+					if (current != null) {
+						attrs.onEventMoved(current.originalEvent._id, current.eventClone.startTime)
+					}
+					this._currentlyDraggedEvent = null
+				},
+				onmouseleave: () => {
+					const current = this._currentlyDraggedEvent
+					if (current != null) {
+						attrs.onEventMoved(current.originalEvent._id, current.eventClone.startTime)
+					}
+					this._currentlyDraggedEvent = null
+
+				},
 			}, [
-				m(".flex.col", calendarDayTimes.map(n => m(".calendar-hour.flex",
+				m(".flex.col", calendarDayTimes.map(time => m(".calendar-hour.flex",
 					m(".center.small", {
 						style: {
 							'line-height': px(size.calendar_hour_height),
@@ -223,7 +245,7 @@ export class CalendarWeekView implements MComponent<Attrs> {
 							height: px(size.calendar_hour_height),
 							'border-right': `2px solid ${theme.content_border}`,
 						},
-					}, formatTime(n))
+					}, formatTime(time.toDate()))
 					)
 				)),
 				m(".flex.flex-grow", thisWeek.week.map((weekday, i) => {
@@ -250,7 +272,10 @@ export class CalendarWeekView implements MComponent<Attrs> {
 								const actualDate = combineDateWithTime(weekday, Time.fromDate(newDate))
 								attrs.onEventMoved(id, actualDate)
 							},
-							day: weekday
+							day: weekday,
+							setCurrentDraggedEvent: (event) => this._currentlyDraggedEvent = new EventDragHandler(event, this.getTimeUnderMouse()),
+							setTimeUnderMouse: (time) => this._timeUnderMouse = combineDateWithTime(weekday, time),
+							eventBeingDragged: this._currentlyDraggedEvent?.eventClone
 						}))
 					})
 				)
@@ -263,23 +288,31 @@ export class CalendarWeekView implements MComponent<Attrs> {
 	_getEventsForWeek(week: Date[], attrs: Attrs): WeekEvents {
 		const eventsForWeek = new Set()
 		const eventsPerDay = []
-		week.forEach((wd) => {
-			const weekdayDate = wd
+		for (let weekday of week) {
 			const eventsForWeekDay = []
-			const weekEvents = attrs.eventsForDays.get(wd.getTime()) || []
-			weekEvents.forEach((event) => {
+			const weekEvents = attrs.eventsForDays.get(weekday.getTime()) || []
+			for (let event of weekEvents) {
+				if (this._currentlyDraggedEvent?.originalEvent === event) {
+					continue
+				}
+
 				if (!attrs.hiddenCalendars.has(neverNull(event._ownerGroup)) && !eventsForWeek.has(event)) {
 					//short -> shorter than 24 hours
-					const isShort = !isAllDayEvent(event) && getDiffInHours(event.startTime, event.endTime) < 24
-					if (isShort) {
+					if (!isAllDayEvent(event) && getDiffInHours(event.startTime, event.endTime) < 24) {
 						eventsForWeekDay.push(event)
 					} else {
 						eventsForWeek.add(event)
 					}
 				}
-			})
+			}
+
+			const draggedEventGhost = this._currentlyDraggedEvent?.eventClone
+			if (draggedEventGhost && isEventBetweenDays(draggedEventGhost, weekday, weekday, getTimeZone())) {
+				eventsForWeekDay.push(draggedEventGhost)
+			}
 			eventsPerDay.push(eventsForWeekDay)
-		})
+		}
+
 		const longEvents = this._renderLongEvents(week, eventsForWeek, attrs)
 		return {week, eventsForWeek, eventsPerDay, longEvents}
 	}
@@ -332,5 +365,9 @@ export class CalendarWeekView implements MComponent<Attrs> {
 			children,
 			maxColumns
 		}
+	}
+
+	getTimeUnderMouse(): Date {
+		return this._timeUnderMouse
 	}
 }

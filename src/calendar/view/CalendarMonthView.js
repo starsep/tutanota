@@ -19,7 +19,7 @@ import {
 	getStartOfTheWeekOffset,
 	getTimeZone,
 	getWeekNumber,
-	isEventInWeek,
+	isEventBetweenDays,
 	layOutEvents
 } from "../date/CalendarUtils"
 import {incrementDate, isSameDay} from "../../api/common/utils/DateUtils"
@@ -68,7 +68,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 	_currentlyDraggedEvent: ?EventDragHandler = null
 	_dayUnderMouse: Date
 
-	constructor() {
+	constructor(vnode: Vnode<CalendarMonthAttrs>) {
 		this._resizeListener = m.redraw
 		this._zone = getTimeZone()
 		this._lastHeight = 0
@@ -251,7 +251,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 		const lastDayOfWeek = lastThrow(week)
 
 		if (this._currentlyDraggedEvent
-			&& isEventInWeek(this._currentlyDraggedEvent.eventClone, firstDayOfWeek, lastDayOfWeek.date, zone)) {
+			&& isEventBetweenDays(this._currentlyDraggedEvent.eventClone, firstDayOfWeek, lastDayOfWeek.date, zone)) {
 			events.add(this._currentlyDraggedEvent.eventClone)
 		}
 

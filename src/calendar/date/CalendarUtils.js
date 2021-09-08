@@ -879,9 +879,9 @@ export function activateBubblePointerEvents(bubbleDoms: Iterable<HTMLElement>) {
 }
 
 /**
- * Check if an event occurs during some week, either partially or entirely
+ * Check if an event occurs during some time period of days, either partially or entirely
  * Expects that firstDayOfWeek is before lastDayOfWeek, and that event starts before it ends, otherwise result is invalid
  */
-export function isEventInWeek(event: CalendarEvent, firstDayOfWeek: Date, lastDayOfWeek: Date, zone: string): boolean {
-	return !(eventEndsBefore(firstDayOfWeek, zone, event) || eventStartsAfter(getEndOfDay(lastDayOfWeek), zone, event))
+export function isEventBetweenDays(event: CalendarEvent, firstDay: Date, lastDay: Date, zone: string): boolean {
+	return !(eventEndsBefore(firstDay, zone, event) || eventStartsAfter(getEndOfDay(lastDay), zone, event))
 }

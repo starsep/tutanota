@@ -17,6 +17,17 @@ export class Time {
 		return new Time(date.getHours(), date.getMinutes())
 	}
 
+
+	/**
+	 * create a date with year/month/day set to the currentdate
+	 */
+	toDate(): Date {
+		const date = new Date()
+		date.setHours(this.hours)
+		date.setMinutes(this.minutes)
+		return date
+	}
+
 	equals(otherTime: Time): boolean {
 		return this.hours === otherTime.hours && this.minutes === otherTime.minutes
 	}
