@@ -5,7 +5,6 @@ import {colorForBg} from "../date/CalendarUtils"
 import {px, size} from "../../gui/size"
 import {Icon} from "../../gui/base/Icon"
 import {Icons} from "../../gui/base/icons/Icons"
-import {noOp} from "../../api/common/utils/Utils"
 
 export type CalendarEventBubbleAttrs = {
 	text: string,
@@ -19,6 +18,7 @@ export type CalendarEventBubbleAttrs = {
 	verticalPadding?: number,
 	onDragStart?: DragEvent => *,
 	onDragEnd?: DragEvent => *,
+	fadeIn: boolean
 }
 
 
@@ -28,7 +28,8 @@ const lineHeightPx = px(lineHeight)
 export class CalendarEventBubble implements MComponent<CalendarEventBubbleAttrs> {
 
 	view({attrs}: Vnode<CalendarEventBubbleAttrs>): Children {
-		return m(".calendar-event.small.overflow-hidden.flex.fade-in"
+		return m(".calendar-event.small.overflow-hidden.flex"
+			+ (attrs.fadeIn ? ".fade-in" : "")
 			+ (attrs.noBorderLeft ? ".event-continues-left" : "")
 			+ (attrs.noBorderRight ? ".event-continues-right" : "")
 			, {

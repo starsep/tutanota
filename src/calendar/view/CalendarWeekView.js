@@ -330,8 +330,8 @@ export class CalendarWeekView implements MComponent<Attrs> {
 						color: getEventColor(event, attrs.groupColors),
 						onEventClicked: attrs.onEventClicked,
 						showTime: getTimeTextFormatForLongEventOnWeek(event, firstDayOfWeek, lastDayOfWeek, zone),
-						user: logins.getUserController().user
-
+						user: logins.getUserController().user,
+						fadeIn: true
 					}))
 				}))
 		}, true)

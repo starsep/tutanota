@@ -338,6 +338,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 			onEventClicked: (e, domEvent) => {
 				attrs.onEventClicked(event, domEvent)
 			},
+			fadeIn: this._currentlyDraggedEvent == null || event !== this._currentlyDraggedEvent.eventClone
 		}))
 	}
 

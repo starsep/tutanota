@@ -154,7 +154,8 @@ export class CalendarDayEventsView implements MComponent<Attrs> {
 				handleEntityDragged(ev, dragEvent)
 				attrs.onDragStart?.(dragEvent)
 			},
-			onDragEnd: attrs.onDragEnd
+			onDragEnd: attrs.onDragEnd,
+			fadeIn: true
 		}))
 	}
 

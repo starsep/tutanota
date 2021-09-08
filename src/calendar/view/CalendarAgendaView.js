@@ -101,7 +101,8 @@ export class CalendarAgendaView implements MComponent<Attrs> {
 										hasAlarm: !startsBefore && hasAlarmsForTheUser(logins.getUserController().user, ev),
 										click: (domEvent) => attrs.onEventClicked(ev, domEvent),
 										height: 38,
-										verticalPadding: 2
+										verticalPadding: 2,
+										fadeIn: true
 									}))
 								}))
 						])
