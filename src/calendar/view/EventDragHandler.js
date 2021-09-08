@@ -16,6 +16,9 @@ export class EventDragHandler {
 	_isDragging: boolean = false
 
 	get originalEvent(): ?CalendarEvent {
+		if (!this._isDragging) {
+			return null
+		}
 		return this._data?.originalEvent
 	}
 
@@ -61,7 +64,7 @@ export class EventDragHandler {
 	}
 
 	endDrag(dateUnderMouse: Date, callback: (eventId: IdTuple, newDate: Date) => *) {
-		if (this._data) {
+		if (this._isDragging && this._data) {
 			const {originalEvent, eventClone} = this._data
 			callback(originalEvent._id, eventClone.startTime)
 		}

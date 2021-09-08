@@ -68,12 +68,13 @@ export class CalendarWeekView implements MComponent<Attrs> {
 	_longEventsDom: ?HTMLElement;
 	_domElements: HTMLElement[] = [];
 	_scrollPosition: number;
-	_currentlyDraggedEvent: ?EventDragHandler = null
+	_eventDragHandler: EventDragHandler
 	_timeUnderMouse: Date
 
 	constructor(vnode: Vnode<Attrs>) {
 		this._scrollPosition = size.calendar_hour_height * DEFAULT_HOUR_OF_DAY
 		this._timeUnderMouse = vnode.attrs.selectedDate
+		this._eventDragHandler = new EventDragHandler()
 	}
 
 	view(vnode: Vnode<Attrs>): Children {
@@ -217,25 +218,9 @@ export class CalendarWeekView implements MComponent<Attrs> {
 						this._scrollPosition = event.target.scrollTop
 					}
 				},
-				onmousemove: () => {
-					console.log(this.getTimeUnderMouse()    )
-					this._currentlyDraggedEvent?.handleDrag(this.getTimeUnderMouse())
-				},
-				onmouseup: () => {
-					const current = this._currentlyDraggedEvent
-					if (current != null) {
-						attrs.onEventMoved(current.originalEvent._id, current.eventClone.startTime)
-					}
-					this._currentlyDraggedEvent = null
-				},
-				onmouseleave: () => {
-					const current = this._currentlyDraggedEvent
-					if (current != null) {
-						attrs.onEventMoved(current.originalEvent._id, current.eventClone.startTime)
-					}
-					this._currentlyDraggedEvent = null
-
-				},
+				onmousemove: () => this._eventDragHandler.handleDrag(this.getTimeUnderMouse()),
+				onmouseup: () => this._eventDragHandler.endDrag(this.getTimeUnderMouse(), attrs.onEventMoved),
+				onmouseleave: () => this._eventDragHandler.endDrag(this.getTimeUnderMouse(), attrs.onEventMoved),
 			}, [
 				m(".flex.col", calendarDayTimes.map(time => m(".calendar-hour.flex",
 					m(".center.small", {
@@ -273,9 +258,9 @@ export class CalendarWeekView implements MComponent<Attrs> {
 								attrs.onEventMoved(id, actualDate)
 							},
 							day: weekday,
-							setCurrentDraggedEvent: (event) => this._currentlyDraggedEvent = new EventDragHandler(event, this.getTimeUnderMouse()),
+							setCurrentDraggedEvent: (event) => this._eventDragHandler.prepareDrag(event, this.getTimeUnderMouse()),
 							setTimeUnderMouse: (time) => this._timeUnderMouse = combineDateWithTime(weekday, time),
-							eventBeingDragged: this._currentlyDraggedEvent?.eventClone
+							eventBeingDragged: this._eventDragHandler.temporaryEvent
 						}))
 					})
 				)
@@ -292,7 +277,7 @@ export class CalendarWeekView implements MComponent<Attrs> {
 			const eventsForWeekDay = []
 			const weekEvents = attrs.eventsForDays.get(weekday.getTime()) || []
 			for (let event of weekEvents) {
-				if (this._currentlyDraggedEvent?.originalEvent === event) {
+				if (this._eventDragHandler.originalEvent === event) {
 					continue
 				}
 
@@ -306,9 +291,9 @@ export class CalendarWeekView implements MComponent<Attrs> {
 				}
 			}
 
-			const draggedEventGhost = this._currentlyDraggedEvent?.eventClone
-			if (draggedEventGhost && isEventBetweenDays(draggedEventGhost, weekday, weekday, getTimeZone())) {
-				eventsForWeekDay.push(draggedEventGhost)
+			const temporaryEvent = this._eventDragHandler.temporaryEvent
+			if (temporaryEvent && isEventBetweenDays(temporaryEvent, weekday, weekday, getTimeZone())) {
+				eventsForWeekDay.push(temporaryEvent)
 			}
 			eventsPerDay.push(eventsForWeekDay)
 		}
