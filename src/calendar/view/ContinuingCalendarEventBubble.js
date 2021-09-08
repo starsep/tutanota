@@ -15,7 +15,8 @@ type ContinuingCalendarEventBubbleAttrs = {|
 	onEventClicked: (event: CalendarEvent, domEvent: Event) => mixed,
 	showTime: ?EventTextTimeOptionEnum,
 	user: User,
-	fadeIn: boolean
+	fadeIn: boolean,
+	opacity: number
 |}
 
 export class ContinuingCalendarEventBubble implements MComponent<ContinuingCalendarEventBubbleAttrs> {
@@ -40,7 +41,8 @@ export class ContinuingCalendarEventBubble implements MComponent<ContinuingCalen
 					noBorderLeft: attrs.startsBefore,
 					noBorderRight: attrs.endsAfter,
 					hasAlarm: hasAlarmsForTheUser(attrs.user, attrs.event),
-					fadeIn: attrs.fadeIn
+					fadeIn: attrs.fadeIn,
+					opacity: attrs.opacity
 				}),
 			),
 			attrs.endsAfter

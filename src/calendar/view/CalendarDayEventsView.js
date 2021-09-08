@@ -155,7 +155,8 @@ export class CalendarDayEventsView implements MComponent<Attrs> {
 				attrs.onDragStart?.(dragEvent)
 			},
 			onDragEnd: attrs.onDragEnd,
-			fadeIn: true
+			fadeIn: true,
+			opacity: 1
 		}))
 	}
 

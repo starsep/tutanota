@@ -102,7 +102,8 @@ export class CalendarAgendaView implements MComponent<Attrs> {
 										click: (domEvent) => attrs.onEventClicked(ev, domEvent),
 										height: 38,
 										verticalPadding: 2,
-										fadeIn: true
+										fadeIn: true,
+										opacity: 1
 									}))
 								}))
 						])

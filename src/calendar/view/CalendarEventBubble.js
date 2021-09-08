@@ -16,7 +16,8 @@ export type CalendarEventBubbleAttrs = {
 	noBorderRight?: boolean,
 	noBorderLeft?: boolean,
 	verticalPadding?: number,
-	fadeIn: boolean
+	fadeIn: boolean,
+	opacity: number
 }
 
 
@@ -37,6 +38,7 @@ export class CalendarEventBubble implements MComponent<CalendarEventBubbleAttrs>
 					minHeight: lineHeightPx,
 					height: px(attrs.height ? Math.max(attrs.height, 0) : lineHeight),
 					"padding-top": px(attrs.verticalPadding || 0),
+					opacity: attrs.opacity
 				},
 				onclick: (e) => {
 					e.stopPropagation()

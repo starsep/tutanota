@@ -262,7 +262,8 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 					onEventClicked: (_, domEvent) => onEventClicked(e, domEvent),
 					showTime: EventTextTimeOption.ALL_DAY,
 					user: logins.getUserController().user,
-					fadeIn: true
+					fadeIn: true,
+					opacity: 1
 				})
 			})),
 			m(".calendar-hour-margin.pr-l", longEvents.map(e => m(ContinuingCalendarEventBubble, {
@@ -273,7 +274,8 @@ export class CalendarDayView implements MComponent<CalendarDayViewAttrs> {
 				onEventClicked: (_, domEvent) => onEventClicked(e, domEvent),
 				showTime: getTimeTextFormatForLongEventOnDay(e, date, zone),
 				user: logins.getUserController().user,
-				fadeIn: true
+				fadeIn: true,
+				opacity: 1
 			}))),
 			mainPageEvents.allDayEvents.length > 0 || mainPageEvents.longEvents.length > 0
 				? m(".mt-s")
