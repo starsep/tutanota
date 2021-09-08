@@ -74,7 +74,6 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 	_zone: string
 	_lastWidth: number
 	_lastHeight: number
-	_bubbleDoms: Set<HTMLElement>
 	_currentlyDraggedEvent: ?EventDragData = null
 	_dayUnderMouse: ?Date = null
 
@@ -83,7 +82,6 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 		this._zone = getTimeZone()
 		this._lastHeight = 0
 		this._lastHeight = 0
-		this._bubbleDoms = new Set()
 	}
 
 	oncreate() {
@@ -168,7 +166,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 				},
 				onmousemove: () => this.eventDragMove(),
 				onmouseup: () => this.eventDragEnd(attrs.onEventMoved),
-				onmouseleave: (event: MouseEvent) => this.eventDragEnd(attrs.onEventMoved),
+				onmouseleave: () => this.eventDragEnd(attrs.onEventMoved),
 			}, weeks.map((week) => {
 				return m(".flex.flex-grow.rel", [
 					week.map((d, i) => this._renderDay(attrs, d, today, i)),
@@ -324,9 +322,6 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 				left: px(position.left),
 				right: px(position.right)
 			},
-			oncreate: vnode => {
-				this._bubbleDoms.add(vnode.dom)
-			},
 			onmousedown: () => this.eventDragStart(event),
 		}, m(ContinuingCalendarEventBubble, {
 			event: event,
@@ -399,11 +394,6 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 
 		const current = this._currentlyDraggedEvent
 		if (current != null) {
-
-			for (let dom of this._bubbleDoms) {
-				dom.style.pointerEvents = "none"
-				dom.style.opacity = "0.7"
-			}
 			const dayUnderMouse = neverNull(this.getDayUnderMouse())
 			const mouseDiff = getDiffInDays(current.mouseOriginDay, dayUnderMouse)
 			const newStartTime = new Date(current.eventOriginalStart)
@@ -421,10 +411,6 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 	}
 
 	eventDragEnd(updateEventCallback: (eventId: IdTuple, newStartDate: Date) => *) {
-		for (let dom of this._bubbleDoms) {
-			dom.style.pointerEvents = "auto"
-			dom.style.opacity = "1"
-		}
 
 		const current = this._currentlyDraggedEvent
 		this._currentlyDraggedEvent = null
