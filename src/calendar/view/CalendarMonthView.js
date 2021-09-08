@@ -167,9 +167,8 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 					}
 				},
 				onmousemove: () => this.eventDragMove(),
-				// FIXME this never gets called if the mouse leaves the calendar perimiter
-				//       Use onmouseout
 				onmouseup: () => this.eventDragEnd(attrs.onEventMoved),
+				onmouseleave: (event: MouseEvent) => this.eventDragEnd(attrs.onEventMoved),
 			}, weeks.map((week) => {
 				return m(".flex.flex-grow.rel", [
 					week.map((d, i) => this._renderDay(attrs, d, today, i)),
