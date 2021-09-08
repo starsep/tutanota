@@ -61,9 +61,7 @@ export class CalendarDayEventsView implements MComponent<Attrs> {
 							vnode.attrs.onTimeContextPressed(time.hours, time.minutes)
 							e.preventDefault()
 						},
-						onmousemove: () => {
-							vnode.attrs.setTimeUnderMouse(time)
-						}
+						onmousemove: () => vnode.attrs.setTimeUnderMouse(time)
 					},
 				)),
 				this._dayDom ? this._renderEvents(vnode.attrs, vnode.attrs.events) : null,
@@ -129,7 +127,13 @@ export class CalendarDayEventsView implements MComponent<Attrs> {
 				top: px(startTime / DAY_IN_MILLIS * allHoursHeight),
 				height: px(height)
 			},
-			onmousedown: () => attrs.setCurrentDraggedEvent(ev)
+			onmousedown: () => attrs.setCurrentDraggedEvent(ev),
+			onmousemove: () => {
+
+				// FIXME this is broken for events > 1hr
+				// Maybe we need to propagate the event along to the day square underneath somehow?
+				attrs.setTimeUnderMouse(Time.fromDate(ev.startTime))
+			}
 		}, m(CalendarEventBubble, {
 			text: ev.summary,
 			secondLineText: !isAllDayEvent(ev) ? formatEventTime(ev, getTimeTextFormatForLongEventOnDay(ev, attrs.day, zone)) : null,
