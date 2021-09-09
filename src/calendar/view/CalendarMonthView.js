@@ -39,6 +39,7 @@ import {logins} from "../../api/main/LoginController"
 import type {CalendarViewTypeEnum} from "./CalendarView"
 import {CalendarViewType, SELECTED_DATE_INDICATOR_THICKNESS} from "./CalendarView"
 import {EventDragHandler} from "./EventDragHandler"
+import {getCoordinatesFromMouseEvent} from "../../gui/base/GuiUtils"
 
 type CalendarMonthAttrs = {
 	selectedDate: Date,
@@ -157,7 +158,11 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 						this._monthDom = vnode.dom
 					}
 				},
-				onmousemove: () => this._eventDragHandler.handleDrag(this.getDayUnderMouse()),
+				onmousemove: mouseEvent => {
+					const currentDate = this._getDateUnderMouseEvent(mouseEvent, weeks)
+					this._dayUnderMouse = currentDate
+					this._eventDragHandler.handleDrag(currentDate)
+				},
 				onmouseup: () => this._eventDragHandler.endDrag(this.getDayUnderMouse(), attrs.onEventMoved),
 				onmouseleave: () => () => this._eventDragHandler.endDrag(this.getDayUnderMouse(), attrs.onEventMoved),
 			}, weeks.map((week) => {
@@ -167,6 +172,15 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 				])
 			}))
 		])
+	}
+
+	_getDateUnderMouseEvent(mouseEvent: MouseEvent, weeks: Array<Array<CalendarDay>>): Date {
+		const {x, y, targetWidth, targetHeight} = getCoordinatesFromMouseEvent(mouseEvent)
+		const unitHeight = targetHeight / 6
+		const unitWidth = targetWidth / 7
+		const currentSquareX = Math.floor(x / unitWidth)
+		const currentSquareY = Math.floor(y / unitHeight)
+		return weeks[currentSquareY][currentSquareX].date
 	}
 
 	_renderDay(attrs: CalendarMonthAttrs, d: CalendarDay, today: Date, weekDayNumber: number): Children {
@@ -189,9 +203,6 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 						attrs.onDateSelected(new Date(d.date), CalendarViewType.DAY)
 					}
 					e.preventDefault()
-				},
-				onmouseover: () => {
-					this._dayUnderMouse = d.date
 				},
 			},
 			[
@@ -367,8 +378,6 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 	getDayUnderMouse(): Date {
 		return this._dayUnderMouse
 	}
-
-
 }
 
 /**

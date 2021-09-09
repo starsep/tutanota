@@ -315,7 +315,6 @@ export class CalendarWeekView implements MComponent<Attrs> {
 		const zone = getTimeZone()
 		const children = layOutEvents(Array.from(eventsForWeek), zone, (columns) => {
 			maxColumns = Math.max(maxColumns, columns.length)
-			console.log("IS DRAGGING: ", this._eventDragHandler.isDragging)
 			return columns.map((rows, c) =>
 				rows.map((event) => {
 					const zone = getTimeZone()

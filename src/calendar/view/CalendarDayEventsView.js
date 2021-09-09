@@ -22,6 +22,7 @@ import type {CalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
 import {logins} from "../../api/main/LoginController"
 import {isAllDayEvent} from "../../api/common/utils/CommonCalendarUtils"
 import {Time} from "../../api/common/utils/Time"
+import {getCoordinatesFromMouseEvent} from "../../gui/base/GuiUtils"
 
 export type Attrs = {
 	onEventClicked: (event: CalendarEvent, domEvent: Event) => mixed,
@@ -43,30 +44,43 @@ const allHoursHeight = size.calendar_hour_height * calendarDayTimes.length
 export class CalendarDayEventsView implements MComponent<Attrs> {
 	_dayDom: ?HTMLElement;
 
-	view(vnode: Vnode<Attrs>): Children {
+	view({attrs}: Vnode<Attrs>): Children {
 		return m(".col.rel",
 			{
 				oncreate: (vnode) => {
 					this._dayDom = vnode.dom
 					m.redraw()
+				},
+				onmousemove: (mouseEvent: MouseEvent) => {
+					const time = this._getTimeUnderMouseEvent(mouseEvent)
+					attrs.setTimeUnderMouse(time)
 				}
 			},
 			[
 				calendarDayTimes.map(time => m(".calendar-hour.flex", {
 						onclick: (e) => {
 							e.stopPropagation()
-							vnode.attrs.onTimePressed(time.hours, time.minutes)
+							attrs.onTimePressed(time.hours, time.minutes)
 						},
 						oncontextmenu: (e) => {
-							vnode.attrs.onTimeContextPressed(time.hours, time.minutes)
+							attrs.onTimeContextPressed(time.hours, time.minutes)
 							e.preventDefault()
 						},
-						onmousemove: () => vnode.attrs.setTimeUnderMouse(time)
 					},
 				)),
-				this._dayDom ? this._renderEvents(vnode.attrs, vnode.attrs.events) : null,
-				this._renderTimeIndicator(vnode.attrs),
+				this._dayDom ? this._renderEvents(attrs, attrs.events) : null,
+				this._renderTimeIndicator(attrs),
 			])
+	}
+
+	_getTimeUnderMouseEvent(mouseEvent: MouseEvent): Time {
+		const {y, targetHeight} = getCoordinatesFromMouseEvent(mouseEvent)
+		const sectionHeight = targetHeight / 24
+		const hour = y / sectionHeight
+		const hourRounded = Math.floor(hour)
+		// increment in 15 minute intervals
+		const minute = Math.floor((hour - hourRounded) * 4) * 15
+		return new Time(hour, minute)
 	}
 
 	_renderTimeIndicator(attrs: Attrs): Children {
@@ -108,7 +122,6 @@ export class CalendarDayEventsView implements MComponent<Attrs> {
 		return layOutEvents(events, getTimeZone(), (columns) => this._renderColumns(attrs, columns), false)
 	}
 
-
 	_renderEvent(attrs: Attrs, ev: CalendarEvent, columnIndex: number, columns: Array<Array<CalendarEvent>>, columnWidth: number): Children {
 
 		const zone = getTimeZone()
@@ -128,12 +141,6 @@ export class CalendarDayEventsView implements MComponent<Attrs> {
 				height: px(height)
 			},
 			onmousedown: () => attrs.setCurrentDraggedEvent(ev),
-			onmousemove: () => {
-
-				// FIXME this is broken for events > 1hr
-				// Maybe we need to propagate the event along to the day square underneath somehow?
-				attrs.setTimeUnderMouse(Time.fromDate(ev.startTime))
-			}
 		}, m(CalendarEventBubble, {
 			text: ev.summary,
 			secondLineText: !isAllDayEvent(ev) ? formatEventTime(ev, getTimeTextFormatForLongEventOnDay(ev, attrs.day, zone)) : null,

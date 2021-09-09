@@ -14,7 +14,8 @@ import {assertNotNull, mapLazily, noOp} from "../../api/common/utils/Utils"
 import {Dialog} from "./Dialog"
 import {logins} from "../../api/main/LoginController"
 import type {AllIconsEnum} from "./Icon"
-import type {ListElement, Element} from "../../api/common/utils/EntityUtils"
+import type {Element, ListElement} from "../../api/common/utils/EntityUtils"
+import {ProgrammingError} from "../../api/common/error/ProgrammingError"
 
 // TODO Use DropDownSelectorN
 export function createCountryDropdown(selectedCountry: Stream<?Country>, helpLabel?: lazy<string>, label: TranslationKey | lazy<string> = "invoiceCountry_label"): DropDownSelector<?Country> {
@@ -170,4 +171,25 @@ export function handleEntityDragged(entity: Element | ListElement, ev: DragEvent
 		? entity._id.join(",")
 		: entity._id
 	ev.dataTransfer?.setData("text", idString)
+}
+
+/**
+ * Get the mouse's x and y coordinates relative to the target, and the width and height of the target.
+ * The currentTarget must be a HTMLElement or this throws an error
+ * @param mouseEvent
+ */
+export function getCoordinatesFromMouseEvent(
+	{currentTarget, x, y}: MouseEvent
+): {x: number, y: number, targetWidth: number, targetHeight: number} {
+	if (currentTarget instanceof HTMLElement) {
+		const {height, width, left, top} = currentTarget.getBoundingClientRect()
+		return {
+			targetHeight: height,
+			targetWidth: width,
+			x: x - left,
+			y: y - top,
+		}
+	} else {
+		throw new ProgrammingError("Target is not a HTMLElement")
+	}
 }
