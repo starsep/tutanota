@@ -334,7 +334,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 				attrs.onEventClicked(event, domEvent)
 			},
 			fadeIn: !this._eventDragHandler.isDragging,
-			opacity: this._eventDragHandler.temporaryEvent === event || mapNullable(eventBeingDragged, ev => haveSameId(ev, event))
+			opacity: mapNullable(eventBeingDragged, ev => haveSameId(ev, event))
 				? EVENT_BEING_DRAGGED_OPACITY
 				: 1,
 			enablePointerEvents: !this._eventDragHandler.isDragging

@@ -6,6 +6,7 @@ import {px, size} from "../../gui/size"
 import {DAY_IN_MILLIS, getEndOfDay, getStartOfDay} from "../../api/common/utils/DateUtils"
 import {numberRange} from "../../api/common/utils/ArrayUtils"
 import {
+	EVENT_BEING_DRAGGED_OPACITY,
 	eventEndsAfterDay,
 	eventStartsBefore,
 	expandEvent,
@@ -17,12 +18,13 @@ import {
 	layOutEvents
 } from "../date/CalendarUtils"
 import {CalendarEventBubble} from "./CalendarEventBubble"
-import {neverNull} from "../../api/common/utils/Utils"
+import {mapNullable, neverNull} from "../../api/common/utils/Utils"
 import type {CalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
 import {logins} from "../../api/main/LoginController"
 import {isAllDayEvent} from "../../api/common/utils/CommonCalendarUtils"
 import {Time} from "../../api/common/utils/Time"
 import {getCoordinatesFromMouseEvent} from "../../gui/base/GuiUtils"
+import {haveSameId} from "../../api/common/utils/EntityUtils"
 
 export type Attrs = {
 	onEventClicked: (event: CalendarEvent, domEvent: Event) => mixed,
@@ -150,7 +152,9 @@ export class CalendarDayEventsView implements MComponent<Attrs> {
 			hasAlarm: hasAlarmsForTheUser(logins.getUserController().user, ev),
 			verticalPadding: padding,
 			fadeIn: !attrs.eventBeingDragged,
-			opacity: attrs.eventBeingDragged === ev ? .7 : 1,
+			opacity: mapNullable(attrs.eventBeingDragged, event => haveSameId(event, ev))
+				? EVENT_BEING_DRAGGED_OPACITY
+				: 1,
 			enablePointerEvents: !attrs.eventBeingDragged
 		}))
 	}
