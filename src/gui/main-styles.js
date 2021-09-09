@@ -1316,7 +1316,6 @@ styles.registerStyle('main', () => {
 		},
 
 		'.transition-margin': {'transition': `margin-bottom 200ms ease-in-out`},
-
 		'.date-selected': {
 			'border-radius': '50%',
 			background: theme.content_accent,
@@ -1325,6 +1324,7 @@ styles.registerStyle('main', () => {
 		'.date-current': {
 			'border-radius': '50%',
 			background: theme.content_accent,
+			opacity: .5,
 			color: theme.elevated_bg,
 		},
 
