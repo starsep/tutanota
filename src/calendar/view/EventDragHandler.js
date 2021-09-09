@@ -4,12 +4,19 @@ import {CalendarEventTypeRef, createCalendarEvent} from "../../api/entities/tuta
 import m from "mithril"
 import {EntityClient} from "../../api/common/EntityClient"
 
+export type MousePos = {
+	x: number,
+	y: number
+}
+
 // Convenience wrapper for nullability
 type DragData = {
 	originalEvent: CalendarEvent,
 	originalDateUnderMouse: Date,
 	eventClone: CalendarEvent,
+	originalMousePos: MousePos
 }
+
 
 export class EventDragHandler {
 
@@ -40,10 +47,11 @@ export class EventDragHandler {
 		return this._isDragging
 	}
 
-	prepareDrag(calendarEvent: CalendarEvent, dateUnderMouse: Date) {
+	prepareDrag(calendarEvent: CalendarEvent, dateUnderMouse: Date, mousePos: MousePos) {
 		this._data = {
 			originalEvent: calendarEvent,
 			originalDateUnderMouse: dateUnderMouse,
+			originalMousePos: mousePos,
 			eventClone: createCalendarEvent({
 				_id: calendarEvent._id,
 				startTime: new Date(calendarEvent.startTime),
@@ -53,19 +61,26 @@ export class EventDragHandler {
 		}
 	}
 
-	handleDrag(dateUnderMouse: Date) {
+	handleDrag(dateUnderMouse: Date, mousePos: MousePos) {
 
 		if (this._data) {
-			this._isDragging = true
 
 			const {originalEvent, originalDateUnderMouse, eventClone} = this._data
+			// I dont want to start dragging until the mouse has moved by some amount
+			const diffX = this._data.originalMousePos.x - mousePos.x
+			const diffY = this._data.originalMousePos.y - mousePos.y
+			const diff = Math.sqrt(diffX ** 2 + diffY ** 2)
+			if (diff > 10) {
 
-			const mouseDiff = dateUnderMouse - originalDateUnderMouse
-			eventClone.startTime = new Date(originalEvent.startTime.getTime() + mouseDiff)
-			eventClone.endTime = new Date(originalEvent.endTime.getTime() + mouseDiff)
+				this._isDragging = true
 
-			// TODO check if the mouse has moved to a new day
-			m.redraw()
+				const mouseDiff = dateUnderMouse - originalDateUnderMouse
+				eventClone.startTime = new Date(originalEvent.startTime.getTime() + mouseDiff)
+				eventClone.endTime = new Date(originalEvent.endTime.getTime() + mouseDiff)
+
+				// TODO check if the mouse has moved to a new day
+				m.redraw()
+			}
 		}
 	}
 

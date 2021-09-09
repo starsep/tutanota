@@ -42,6 +42,7 @@ import {CalendarViewType, SELECTED_DATE_INDICATOR_THICKNESS} from "./CalendarVie
 import {Time} from "../../api/common/utils/Time"
 import {EventDragHandler} from "./EventDragHandler"
 import {locator} from "../../api/main/MainLocator"
+import {getCoordinatesFromMouseEvent} from "../../gui/base/GuiUtils"
 
 export type Attrs = {
 	selectedDate: Date,
@@ -245,7 +246,7 @@ export class CalendarWeekView implements MComponent<Attrs> {
 						this._scrollPosition = event.target.scrollTop
 					}
 				},
-				onmousemove: () => this._eventDragHandler.handleDrag(this.getTimeUnderMouse()),
+				onmousemove: ev => this._eventDragHandler.handleDrag(this.getTimeUnderMouse(), getCoordinatesFromMouseEvent(ev)),
 				onmouseup: () => this._eventDragHandler.endDrag(this.getTimeUnderMouse(), attrs.onEventMoved),
 				onmouseleave: () => this._eventDragHandler.endDrag(this.getTimeUnderMouse(), attrs.onEventMoved),
 			}, [
@@ -285,7 +286,7 @@ export class CalendarWeekView implements MComponent<Attrs> {
 								attrs.onEventMoved(id, actualDate)
 							},
 							day: weekday,
-							setCurrentDraggedEvent: (event) => this._eventDragHandler.prepareDrag(event, this.getTimeUnderMouse()),
+							setCurrentDraggedEvent: (event) => this._eventDragHandler.prepareDrag(event, this.getTimeUnderMouse(), getCoordinatesFromMouseEvent(events)),
 							setTimeUnderMouse: (time) => this._timeUnderMouse = combineDateWithTime(weekday, time),
 							eventBeingDragged: this._eventDragHandler.temporaryEvent
 						}))
