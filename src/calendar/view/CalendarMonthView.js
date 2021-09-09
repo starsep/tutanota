@@ -55,7 +55,7 @@ type CalendarMonthAttrs = {
 	startOfTheWeek: WeekStartEnum,
 	groupColors: {[Id]: string},
 	hiddenCalendars: Set<Id>,
-	onEventMoved: (eventId: IdTuple, newStartDate: Date) => *
+	onEventMoved: (eventId: IdTuple, newStartDate: Date) => *,
 }
 
 type SimplePosRect = {top: number, left: number, right: number}
@@ -167,7 +167,9 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 					this._eventDragHandler.handleDrag(currentDate)
 				},
 				onmouseup: () => this._eventDragHandler.endDrag(this.getDayUnderMouse(), attrs.onEventMoved),
-				onmouseleave: () => () => this._eventDragHandler.endDrag(this.getDayUnderMouse(), attrs.onEventMoved),
+				onmouseleave: () => () => {
+					this._eventDragHandler.endDrag(this.getDayUnderMouse(), attrs.onEventMoved)
+				},
 			}, weeks.map((week) => {
 				return m(".flex.flex-grow.rel", [
 					week.map((d, i) => this._renderDay(attrs, d, today, i)),
@@ -314,6 +316,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 	renderEvent(event: CalendarEvent, position: SimplePosRect, eventStart: Date, firstDayOfWeek: Date, firstDayOfNextWeek: Date, eventEnd: Date, attrs: CalendarMonthAttrs): Children {
 
 		const eventBeingDragged = this._eventDragHandler.originalEvent
+		console.log("rendering event, is draggin:", this._eventDragHandler.isDragging)
 		return m(".abs.overflow-hidden", {
 			key: event._id[0] + event._id[1] + event.startTime.getTime(),
 			style: {

@@ -71,6 +71,9 @@ export class CalendarWeekView implements MComponent<Attrs> {
 	_scrollPosition: number;
 	_eventDragHandler: EventDragHandler
 	_timeUnderMouse: Date
+	_weekDom: ?HTMLElement = null
+	_lastWidth: ?number = null
+	_lastHeight: ?number = null
 
 	constructor(vnode: Vnode<Attrs>) {
 		this._scrollPosition = size.calendar_hour_height * DEFAULT_HOUR_OF_DAY
@@ -95,7 +98,30 @@ export class CalendarWeekView implements MComponent<Attrs> {
 		})
 	}
 
+	oncreate(vnode: Vnode<Attrs>) {
+		this._weekDom = vnode.dom
+	}
+
+	onbeforeupdate(newVnode: Vnode<Attrs>, oldVnode: VnodeDOM<Attrs>): boolean {
+		const dom = this._weekDom
+		const different = !dom
+			|| oldVnode.attrs.eventsForDays !== newVnode.attrs.eventsForDays
+			|| oldVnode.attrs.selectedDate !== newVnode.attrs.selectedDate
+			|| oldVnode.attrs.groupColors !== newVnode.attrs.groupColors
+			|| oldVnode.attrs.hiddenCalendars !== newVnode.attrs.hiddenCalendars
+			|| oldVnode.attrs.startOfTheWeek !== newVnode.attrs.startOfTheWeek
+			|| dom.offsetWidth !== this._lastWidth
+			|| dom.offsetHeight !== this._lastHeight
+		if (dom) {
+			this._lastWidth = dom.offsetWidth
+			this._lastHeight = dom.offsetHeight
+		}
+		return different || this._eventDragHandler.isDragging // FIXME diff properly?
+	}
+
+
 	_renderWeek(attrs: Attrs, thisWeek: WeekEvents, mainWeek: WeekEvents): Children {
+		console.log("render week")
 		const firstDate = thisWeek.week[0]
 		const lastDate = lastThrow(thisWeek.week)
 		let title: string

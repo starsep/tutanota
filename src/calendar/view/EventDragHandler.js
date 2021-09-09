@@ -74,7 +74,9 @@ export class EventDragHandler {
 			const {originalEvent, eventClone} = this._data
 			if (originalEvent.repeatRule) {
 				const firstOccurrence = await this._entityClient.load(CalendarEventTypeRef, originalEvent._id)
-				const startTime = new Date(firstOccurrence.startTime.getTime() - (originalEvent.startTime.getTime() - eventClone.startTime.getTime()))
+				const startTime = new Date(
+					firstOccurrence.startTime.getTime() - (originalEvent.startTime.getTime() - eventClone.startTime.getTime())
+				)
 				callback(originalEvent._id, startTime)
 			} else {
 				callback(originalEvent._id, eventClone.startTime)
@@ -83,5 +85,4 @@ export class EventDragHandler {
 		this._data = null
 		this._isDragging = false
 	}
-
 }
