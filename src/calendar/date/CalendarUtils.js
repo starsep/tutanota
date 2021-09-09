@@ -41,6 +41,7 @@ import type {Time} from "../../api/common/utils/Time"
 assertMainOrNode()
 
 export const CALENDAR_EVENT_HEIGHT: number = size.calendar_line_height + 2
+export const EVENT_BEING_DRAGGED_OPACITY = 0.7
 
 export type CalendarMonthTimeRange = {
 	start: Date,

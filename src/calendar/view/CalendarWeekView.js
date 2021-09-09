@@ -41,6 +41,7 @@ import type {CalendarViewTypeEnum} from "./CalendarView"
 import {CalendarViewType, SELECTED_DATE_INDICATOR_THICKNESS} from "./CalendarView"
 import {Time} from "../../api/common/utils/Time"
 import {EventDragHandler} from "./EventDragHandler"
+import {locator} from "../../api/main/MainLocator"
 
 export type Attrs = {
 	selectedDate: Date,
@@ -74,7 +75,7 @@ export class CalendarWeekView implements MComponent<Attrs> {
 	constructor(vnode: Vnode<Attrs>) {
 		this._scrollPosition = size.calendar_hour_height * DEFAULT_HOUR_OF_DAY
 		this._timeUnderMouse = vnode.attrs.selectedDate
-		this._eventDragHandler = new EventDragHandler()
+		this._eventDragHandler = new EventDragHandler(locator.entityClient)
 	}
 
 	view(vnode: Vnode<Attrs>): Children {

@@ -1,19 +1,25 @@
 //@flow
 import type {CalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
-import {createCalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
+import {CalendarEventTypeRef, createCalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
 import m from "mithril"
+import {EntityClient} from "../../api/common/EntityClient"
 
 // Convenience wrapper for nullability
 type DragData = {
 	originalEvent: CalendarEvent,
 	originalDateUnderMouse: Date,
-	eventClone: CalendarEvent
+	eventClone: CalendarEvent,
 }
 
 export class EventDragHandler {
 
 	_data: ?DragData = null
+	_entityClient: EntityClient
 	_isDragging: boolean = false
+
+	constructor(entityClient: EntityClient) {
+		this._entityClient = entityClient
+	}
 
 	get originalEvent(): ?CalendarEvent {
 		if (!this._isDragging) {
@@ -63,10 +69,16 @@ export class EventDragHandler {
 		}
 	}
 
-	endDrag(dateUnderMouse: Date, callback: (eventId: IdTuple, newDate: Date) => *) {
+	async endDrag(dateUnderMouse: Date, callback: (eventId: IdTuple, newDate: Date) => *) {
 		if (this._isDragging && this._data) {
 			const {originalEvent, eventClone} = this._data
-			callback(originalEvent._id, eventClone.startTime)
+			if (originalEvent.repeatRule) {
+				const firstOccurrence = await this._entityClient.load(CalendarEventTypeRef, originalEvent._id)
+				const startTime = new Date(firstOccurrence.startTime.getTime() - (originalEvent.startTime.getTime() - eventClone.startTime.getTime()))
+				callback(originalEvent._id, startTime)
+			} else {
+				callback(originalEvent._id, eventClone.startTime)
+			}
 		}
 		this._data = null
 		this._isDragging = false

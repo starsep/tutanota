@@ -8,6 +8,7 @@ import {EventTextTimeOption, WeekStart} from "../../api/common/TutanotaConstants
 import type {CalendarDay} from "../date/CalendarUtils"
 import {
 	CALENDAR_EVENT_HEIGHT,
+	EVENT_BEING_DRAGGED_OPACITY,
 	getAllDayDateForTimezone,
 	getCalendarMonth,
 	getDateIndicator,
@@ -30,7 +31,7 @@ import {styles} from "../../gui/styles"
 import {formatMonthWithFullYear} from "../../misc/Formatter"
 import {isAllDayEvent, isAllDayEventByTimes} from "../../api/common/utils/CommonCalendarUtils"
 import {windowFacade} from "../../misc/WindowFacade"
-import {neverNull} from "../../api/common/utils/Utils"
+import {mapNullable, neverNull} from "../../api/common/utils/Utils"
 import {Icon} from "../../gui/base/Icon"
 import {Icons} from "../../gui/base/icons/Icons"
 import {PageView} from "../../gui/base/PageView"
@@ -40,6 +41,8 @@ import type {CalendarViewTypeEnum} from "./CalendarView"
 import {CalendarViewType, SELECTED_DATE_INDICATOR_THICKNESS} from "./CalendarView"
 import {EventDragHandler} from "./EventDragHandler"
 import {getCoordinatesFromMouseEvent} from "../../gui/base/GuiUtils"
+import {locator} from "../../api/main/MainLocator"
+import {haveSameId} from "../../api/common/utils/EntityUtils"
 
 type CalendarMonthAttrs = {
 	selectedDate: Date,
@@ -75,7 +78,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 		this._lastHeight = 0
 		this._lastHeight = 0
 		this._dayUnderMouse = vnode.attrs.selectedDate //TODO rather do nothing if null?
-		this._eventDragHandler = new EventDragHandler()
+		this._eventDragHandler = new EventDragHandler(locator.entityClient) // TODO inject?
 	}
 
 	oncreate() {
@@ -310,6 +313,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 
 	renderEvent(event: CalendarEvent, position: SimplePosRect, eventStart: Date, firstDayOfWeek: Date, firstDayOfNextWeek: Date, eventEnd: Date, attrs: CalendarMonthAttrs): Children {
 
+		const eventBeingDragged = this._eventDragHandler.originalEvent
 		return m(".abs.overflow-hidden", {
 			key: event._id[0] + event._id[1] + event.startTime.getTime(),
 			style: {
@@ -330,7 +334,9 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 				attrs.onEventClicked(event, domEvent)
 			},
 			fadeIn: !this._eventDragHandler.isDragging,
-			opacity: this._eventDragHandler.temporaryEvent === event ? .7 : 1,
+			opacity: this._eventDragHandler.temporaryEvent === event || mapNullable(eventBeingDragged, ev => haveSameId(ev, event))
+				? EVENT_BEING_DRAGGED_OPACITY
+				: 1,
 			enablePointerEvents: !this._eventDragHandler.isDragging
 		}))
 	}
