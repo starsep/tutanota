@@ -1146,15 +1146,15 @@ styles.registerStyle('main', () => {
 		},
 
 		'.calendar-day-indicator': { // overriden for mobile
-			height: "24px",
+			height: "22px",
 			"line-height": "24px",
 			"text-align": "center",
 			"font-size": "14px",
 		},
 
 		'.calendar-day-number': {
-			margin: "4px auto",
-			width: "24px",
+			margin: "3px auto",
+			width: "22px",
 		},
 
 		'.calendar-event': {
