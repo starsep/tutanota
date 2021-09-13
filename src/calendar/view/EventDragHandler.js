@@ -4,6 +4,8 @@ import {CalendarEventTypeRef, createCalendarEvent} from "../../api/entities/tuta
 import m from "mithril"
 import {EntityClient} from "../../api/common/EntityClient"
 
+const DRAG_THRESHOLD = 10
+
 export type MousePos = {
 	x: number,
 	y: number
@@ -70,7 +72,7 @@ export class EventDragHandler {
 			const diffX = this._data.originalMousePos.x - mousePos.x
 			const diffY = this._data.originalMousePos.y - mousePos.y
 			const diff = Math.sqrt(diffX ** 2 + diffY ** 2)
-			if (diff > 10) {
+			if (diff > DRAG_THRESHOLD) {
 
 				this._isDragging = true
 

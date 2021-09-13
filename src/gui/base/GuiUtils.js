@@ -173,14 +173,17 @@ export function handleEntityDragged(entity: Element | ListElement, ev: DragEvent
 	ev.dataTransfer?.setData("text", idString)
 }
 
+
+export type MousePosAndBounds = {
+	x: number, y: number, targetWidth: number, targetHeight: number
+}
+
 /**
  * Get the mouse's x and y coordinates relative to the target, and the width and height of the target.
  * The currentTarget must be a HTMLElement or this throws an error
  * @param mouseEvent
  */
-export function getCoordinatesFromMouseEvent(
-	{currentTarget, x, y}: MouseEvent
-): {x: number, y: number, targetWidth: number, targetHeight: number} {
+export function getPosAndBoundsFromMouseEvent({currentTarget, x, y}: MouseEvent): MousePosAndBounds {
 	if (currentTarget instanceof HTMLElement) {
 		const {height, width, left, top} = currentTarget.getBoundingClientRect()
 		return {

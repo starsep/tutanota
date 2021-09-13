@@ -23,7 +23,7 @@ import type {CalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
 import {logins} from "../../api/main/LoginController"
 import {isAllDayEvent} from "../../api/common/utils/CommonCalendarUtils"
 import {Time} from "../../api/common/utils/Time"
-import {getCoordinatesFromMouseEvent} from "../../gui/base/GuiUtils"
+import {getPosAndBoundsFromMouseEvent} from "../../gui/base/GuiUtils"
 import {haveSameId} from "../../api/common/utils/EntityUtils"
 
 export type Attrs = {
@@ -76,7 +76,7 @@ export class CalendarDayEventsView implements MComponent<Attrs> {
 	}
 
 	_getTimeUnderMouseEvent(mouseEvent: MouseEvent): Time {
-		const {y, targetHeight} = getCoordinatesFromMouseEvent(mouseEvent)
+		const {y, targetHeight} = getPosAndBoundsFromMouseEvent(mouseEvent)
 		const sectionHeight = targetHeight / 24
 		const hour = y / sectionHeight
 		const hourRounded = Math.floor(hour)

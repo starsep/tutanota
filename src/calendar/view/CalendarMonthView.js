@@ -39,8 +39,10 @@ import type {CalendarEvent} from "../../api/entities/tutanota/CalendarEvent"
 import {logins} from "../../api/main/LoginController"
 import type {CalendarViewTypeEnum} from "./CalendarView"
 import {CalendarViewType, SELECTED_DATE_INDICATOR_THICKNESS} from "./CalendarView"
+import type {MousePos} from "./EventDragHandler"
 import {EventDragHandler} from "./EventDragHandler"
-import {getCoordinatesFromMouseEvent} from "../../gui/base/GuiUtils"
+import type {MousePosAndBounds} from "../../gui/base/GuiUtils"
+import {getPosAndBoundsFromMouseEvent} from "../../gui/base/GuiUtils"
 import {locator} from "../../api/main/MainLocator"
 import {haveSameId} from "../../api/common/utils/EntityUtils"
 
@@ -71,6 +73,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 	_lastHeight: number
 	_eventDragHandler: EventDragHandler
 	_dayUnderMouse: Date
+	_lastMousePos: ?MousePos = null
 
 	constructor(vnode: Vnode<CalendarMonthAttrs>) {
 		this._resizeListener = m.redraw
@@ -162,9 +165,11 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 					}
 				},
 				onmousemove: mouseEvent => {
-					const currentDate = this._getDateUnderMouseEvent(mouseEvent, weeks)
+					const posAndBoundsFromMouseEvent = getPosAndBoundsFromMouseEvent(mouseEvent)
+					this._lastMousePos = posAndBoundsFromMouseEvent
+					const currentDate = this._getDateUnderMouseEvent(posAndBoundsFromMouseEvent, weeks)
 					this._dayUnderMouse = currentDate
-					this._eventDragHandler.handleDrag(currentDate)
+					this._eventDragHandler.handleDrag(currentDate, posAndBoundsFromMouseEvent)
 				},
 				onmouseup: () => this._eventDragHandler.endDrag(this.getDayUnderMouse(), attrs.onEventMoved),
 				onmouseleave: () => () => {
@@ -179,8 +184,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 		])
 	}
 
-	_getDateUnderMouseEvent(mouseEvent: MouseEvent, weeks: Array<Array<CalendarDay>>): Date {
-		const {x, y, targetWidth, targetHeight} = getCoordinatesFromMouseEvent(mouseEvent)
+	_getDateUnderMouseEvent({x, y, targetWidth, targetHeight}: MousePosAndBounds, weeks: Array<Array<CalendarDay>>): Date {
 		const unitHeight = targetHeight / 6
 		const unitWidth = targetWidth / 7
 		const currentSquareX = Math.floor(x / unitWidth)
@@ -325,7 +329,11 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 				left: px(position.left),
 				right: px(position.right)
 			},
-			onmousedown: () => this._eventDragHandler.prepareDrag(event, this._dayUnderMouse),
+			onmousedown: () => {
+				if (this._lastMousePos) {
+					this._eventDragHandler.prepareDrag(event, this._dayUnderMouse, this._lastMousePos)
+				}
+			},
 		}, m(ContinuingCalendarEventBubble, {
 			event: event,
 			startsBefore: eventStart < firstDayOfWeek,

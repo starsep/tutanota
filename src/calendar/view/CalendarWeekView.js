@@ -42,7 +42,8 @@ import {CalendarViewType, SELECTED_DATE_INDICATOR_THICKNESS} from "./CalendarVie
 import {Time} from "../../api/common/utils/Time"
 import {EventDragHandler} from "./EventDragHandler"
 import {locator} from "../../api/main/MainLocator"
-import {getCoordinatesFromMouseEvent} from "../../gui/base/GuiUtils"
+import {getPosAndBoundsFromMouseEvent} from "../../gui/base/GuiUtils"
+import type {MousePos} from "./EventDragHandler"
 
 export type Attrs = {
 	selectedDate: Date,
@@ -75,6 +76,7 @@ export class CalendarWeekView implements MComponent<Attrs> {
 	_weekDom: ?HTMLElement = null
 	_lastWidth: ?number = null
 	_lastHeight: ?number = null
+	_lastMousePos: ?MousePos = null
 
 	constructor(vnode: Vnode<Attrs>) {
 		this._scrollPosition = size.calendar_hour_height * DEFAULT_HOUR_OF_DAY
@@ -246,7 +248,11 @@ export class CalendarWeekView implements MComponent<Attrs> {
 						this._scrollPosition = event.target.scrollTop
 					}
 				},
-				onmousemove: ev => this._eventDragHandler.handleDrag(this.getTimeUnderMouse(), getCoordinatesFromMouseEvent(ev)),
+				onmousemove: ev => {
+					const coordinatesFromMouseEvent = getPosAndBoundsFromMouseEvent(ev)
+					this._lastMousePos = {x: coordinatesFromMouseEvent.x, y: coordinatesFromMouseEvent.y}
+					return this._eventDragHandler.handleDrag(this.getTimeUnderMouse(), coordinatesFromMouseEvent)
+				},
 				onmouseup: () => this._eventDragHandler.endDrag(this.getTimeUnderMouse(), attrs.onEventMoved),
 				onmouseleave: () => this._eventDragHandler.endDrag(this.getTimeUnderMouse(), attrs.onEventMoved),
 			}, [
@@ -286,7 +292,12 @@ export class CalendarWeekView implements MComponent<Attrs> {
 								attrs.onEventMoved(id, actualDate)
 							},
 							day: weekday,
-							setCurrentDraggedEvent: (event) => this._eventDragHandler.prepareDrag(event, this.getTimeUnderMouse(), getCoordinatesFromMouseEvent(events)),
+							setCurrentDraggedEvent: (event) => {
+								let lastMousePos = this._lastMousePos
+								if (lastMousePos) {
+									this._eventDragHandler.prepareDrag(event, this.getTimeUnderMouse(), lastMousePos)
+								}
+							},
 							setTimeUnderMouse: (time) => this._timeUnderMouse = combineDateWithTime(weekday, time),
 							eventBeingDragged: this._eventDragHandler.temporaryEvent
 						}))
