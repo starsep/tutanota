@@ -25,6 +25,8 @@ export class EventDragHandler {
 	_data: ?DragData = null
 	_entityClient: EntityClient
 	_isDragging: boolean = false
+	_lastMouseDiff: ?number = null
+	_isChanged: boolean = false
 
 	constructor(entityClient: EntityClient) {
 		this._entityClient = entityClient
@@ -49,6 +51,10 @@ export class EventDragHandler {
 		return this._isDragging
 	}
 
+	queryHasChanged(): boolean {
+
+	}
+
 	prepareDrag(calendarEvent: CalendarEvent, dateUnderMouse: Date, mousePos: MousePos) {
 		this._data = {
 			originalEvent: calendarEvent,
@@ -69,19 +75,20 @@ export class EventDragHandler {
 
 			const {originalEvent, originalDateUnderMouse, eventClone} = this._data
 			// I dont want to start dragging until the mouse has moved by some amount
-			const diffX = this._data.originalMousePos.x - mousePos.x
-			const diffY = this._data.originalMousePos.y - mousePos.y
-			const diff = Math.sqrt(diffX ** 2 + diffY ** 2)
-			if (diff > DRAG_THRESHOLD) {
-
+			const distanceX = this._data.originalMousePos.x - mousePos.x
+			const distanceY = this._data.originalMousePos.y - mousePos.y
+			const distance = Math.sqrt(distanceX ** 2 + distanceY ** 2)
+			if (distance > DRAG_THRESHOLD) {
 				this._isDragging = true
-
 				const mouseDiff = dateUnderMouse - originalDateUnderMouse
-				eventClone.startTime = new Date(originalEvent.startTime.getTime() + mouseDiff)
-				eventClone.endTime = new Date(originalEvent.endTime.getTime() + mouseDiff)
 
-				// TODO check if the mouse has moved to a new day
-				m.redraw()
+				// We don't want to trigger a redraw everytime the drag call is triggered, only when necessary
+				if (mouseDiff !== this._lastMouseDiff) {
+					this._lastMouseDiff = mouseDiff
+					eventClone.startTime = new Date(originalEvent.startTime.getTime() + mouseDiff)
+					eventClone.endTime = new Date(originalEvent.endTime.getTime() + mouseDiff)
+					m.redraw()
+				}
 			}
 		}
 	}
@@ -106,4 +113,6 @@ export class EventDragHandler {
 
 		m.redraw()
 	}
+
+
 }

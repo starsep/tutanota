@@ -94,6 +94,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 	}
 
 	view({attrs}: Vnode<CalendarMonthAttrs>): Children {
+		console.log("CalendarMonthView.view")
 		const previousMonthDate = new Date(attrs.selectedDate)
 		previousMonthDate.setMonth(previousMonthDate.getMonth() - 1)
 		previousMonthDate.setDate(1)
@@ -136,7 +137,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 			this._needsRedraw = false
 			return true
 		}
-		return different || this._eventDragHandler.isDragging // FIXME diff properly?
+		return different || this._eventDragHandler.hasChanged // FIXME diff properly?
 	}
 
 	_renderCalendar(attrs: CalendarMonthAttrs, date: Date, zone: string): Children {
