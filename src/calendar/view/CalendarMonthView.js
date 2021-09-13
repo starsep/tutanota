@@ -74,7 +74,6 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 	_eventDragHandler: EventDragHandler
 	_dayUnderMouse: Date
 	_lastMousePos: ?MousePos = null
-	_needsRedraw: boolean = false
 
 	constructor(vnode: Vnode<CalendarMonthAttrs>) {
 		this._resizeListener = m.redraw
@@ -94,7 +93,6 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 	}
 
 	view({attrs}: Vnode<CalendarMonthAttrs>): Children {
-		console.log("CalendarMonthView.view")
 		const previousMonthDate = new Date(attrs.selectedDate)
 		previousMonthDate.setMonth(previousMonthDate.getMonth() - 1)
 		previousMonthDate.setDate(1)
@@ -133,11 +131,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 			this._lastWidth = dom.offsetWidth
 			this._lastHeight = dom.offsetHeight
 		}
-		if (this._needsRedraw) {
-			this._needsRedraw = false
-			return true
-		}
-		return different || this._eventDragHandler.hasChanged // FIXME diff properly?
+		return different || this._eventDragHandler.queryHasChanged()
 	}
 
 	_renderCalendar(attrs: CalendarMonthAttrs, date: Date, zone: string): Children {
@@ -189,7 +183,6 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 	}
 
 	async _endDrag(callback: (eventId: IdTuple, newStartDate: Date) => *): Promise<void> {
-		this._needsRedraw = true
 		await this._eventDragHandler.endDrag(this.getDayUnderMouse(), callback)
 	}
 
@@ -329,7 +322,6 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 	renderEvent(event: CalendarEvent, position: SimplePosRect, eventStart: Date, firstDayOfWeek: Date, firstDayOfNextWeek: Date, eventEnd: Date, attrs: CalendarMonthAttrs): Children {
 
 		const eventBeingDragged = this._eventDragHandler.originalEvent
-		console.log("rendering event, is draggin:", this._eventDragHandler.isDragging)
 		return m(".abs.overflow-hidden", {
 			key: event._id[0] + event._id[1] + event.startTime.getTime(),
 			style: {

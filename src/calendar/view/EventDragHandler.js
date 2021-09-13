@@ -26,7 +26,7 @@ export class EventDragHandler {
 	_entityClient: EntityClient
 	_isDragging: boolean = false
 	_lastMouseDiff: ?number = null
-	_isChanged: boolean = false
+	_hasChanged: boolean = false
 
 	constructor(entityClient: EntityClient) {
 		this._entityClient = entityClient
@@ -51,8 +51,13 @@ export class EventDragHandler {
 		return this._isDragging
 	}
 
+	/**
+	 * Check if the handler has changed since the last time you called this function
+	 */
 	queryHasChanged(): boolean {
-
+		const isChanged = this._hasChanged
+		this._hasChanged = false
+		return isChanged
 	}
 
 	prepareDrag(calendarEvent: CalendarEvent, dateUnderMouse: Date, mousePos: MousePos) {
@@ -67,6 +72,8 @@ export class EventDragHandler {
 				summary: calendarEvent.summary
 			})
 		}
+
+		this._hasChanged = true
 	}
 
 	handleDrag(dateUnderMouse: Date, mousePos: MousePos) {
@@ -82,13 +89,15 @@ export class EventDragHandler {
 				this._isDragging = true
 				const mouseDiff = dateUnderMouse - originalDateUnderMouse
 
-				// We don't want to trigger a redraw everytime the drag call is triggered, only when necessary
 				if (mouseDiff !== this._lastMouseDiff) {
-					this._lastMouseDiff = mouseDiff
-					eventClone.startTime = new Date(originalEvent.startTime.getTime() + mouseDiff)
-					eventClone.endTime = new Date(originalEvent.endTime.getTime() + mouseDiff)
-					m.redraw()
+					this._hasChanged = true
 				}
+
+				// We don't want to trigger a redraw everytime the drag call is triggered, only when necessary
+				this._lastMouseDiff = mouseDiff
+				eventClone.startTime = new Date(originalEvent.startTime.getTime() + mouseDiff)
+				eventClone.endTime = new Date(originalEvent.endTime.getTime() + mouseDiff)
+				m.redraw()
 			}
 		}
 	}
@@ -110,9 +119,7 @@ export class EventDragHandler {
 		}
 		this._data = null
 		this._isDragging = false
-
+		this._hasChanged = true
 		m.redraw()
 	}
-
-
 }
