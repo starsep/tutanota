@@ -74,6 +74,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 	_eventDragHandler: EventDragHandler
 	_dayUnderMouse: Date
 	_lastMousePos: ?MousePos = null
+	_needsRedraw: boolean = false
 
 	constructor(vnode: Vnode<CalendarMonthAttrs>) {
 		this._resizeListener = m.redraw
@@ -131,6 +132,10 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 			this._lastWidth = dom.offsetWidth
 			this._lastHeight = dom.offsetHeight
 		}
+		if (this._needsRedraw) {
+			this._needsRedraw = false
+			return true
+		}
 		return different || this._eventDragHandler.isDragging // FIXME diff properly?
 	}
 
@@ -171,10 +176,8 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 					this._dayUnderMouse = currentDate
 					this._eventDragHandler.handleDrag(currentDate, posAndBoundsFromMouseEvent)
 				},
-				onmouseup: () => this._eventDragHandler.endDrag(this.getDayUnderMouse(), attrs.onEventMoved),
-				onmouseleave: () => {
-					this._eventDragHandler.endDrag(this.getDayUnderMouse(), attrs.onEventMoved)
-				},
+				onmouseup: () => this._endDrag(attrs.onEventMoved),
+				onmouseleave: () => this._endDrag(attrs.onEventMoved),
 			}, weeks.map((week) => {
 				return m(".flex.flex-grow.rel", [
 					week.map((d, i) => this._renderDay(attrs, d, today, i)),
@@ -182,6 +185,11 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 				])
 			}))
 		])
+	}
+
+	async _endDrag(callback: (eventId: IdTuple, newStartDate: Date) => *): Promise<void> {
+		this._needsRedraw = true
+		await this._eventDragHandler.endDrag(this.getDayUnderMouse(), callback)
 	}
 
 	_getDateUnderMouseEvent({x, y, targetWidth, targetHeight}: MousePosAndBounds, weeks: Array<Array<CalendarDay>>): Date {

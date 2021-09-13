@@ -89,17 +89,21 @@ export class EventDragHandler {
 	async endDrag(dateUnderMouse: Date, callback: (eventId: IdTuple, newDate: Date) => *) {
 		if (this._isDragging && this._data) {
 			const {originalEvent, eventClone} = this._data
-			if (originalEvent.repeatRule) {
-				const firstOccurrence = await this._entityClient.load(CalendarEventTypeRef, originalEvent._id)
-				const startTime = new Date(
-					firstOccurrence.startTime.getTime() - (originalEvent.startTime.getTime() - eventClone.startTime.getTime())
-				)
-				callback(originalEvent._id, startTime)
-			} else {
-				callback(originalEvent._id, eventClone.startTime)
+
+			const diff = eventClone.startTime.getTime() - originalEvent.startTime.getTime()
+			if (diff !== 0) {
+				if (originalEvent.repeatRule) {
+					const firstOccurrence = await this._entityClient.load(CalendarEventTypeRef, originalEvent._id)
+					const startTime = new Date(firstOccurrence.startTime.getTime() + diff)
+					callback(originalEvent._id, startTime)
+				} else {
+					callback(originalEvent._id, eventClone.startTime)
+				}
 			}
 		}
 		this._data = null
 		this._isDragging = false
+
+		m.redraw()
 	}
 }
