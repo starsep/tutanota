@@ -172,7 +172,7 @@ export class CalendarMonthView implements MComponent<CalendarMonthAttrs>, Lifecy
 					this._eventDragHandler.handleDrag(currentDate, posAndBoundsFromMouseEvent)
 				},
 				onmouseup: () => this._eventDragHandler.endDrag(this.getDayUnderMouse(), attrs.onEventMoved),
-				onmouseleave: () => () => {
+				onmouseleave: () => {
 					this._eventDragHandler.endDrag(this.getDayUnderMouse(), attrs.onEventMoved)
 				},
 			}, weeks.map((week) => {
