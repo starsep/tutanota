@@ -6,10 +6,11 @@ import {
 	mapInCallContext,
 	PromisableWrapper as PromiseableWrapper,
 	promiseFilter,
-	promiseMap
+	promiseMap, promiseTrySequentially
 } from "../../../src/api/common/utils/PromiseUtils"
 import {defer} from "../../../src/api/common/utils/Utils"
 import {assertThrows} from "../TestUtils"
+import {ProgrammingError} from "../../../src/api/common/error/ProgrammingError"
 
 
 o.spec("PromiseUtils", function () {
@@ -199,6 +200,44 @@ o.spec("PromiseUtils", function () {
 			o(mapper.callCount).equals(4)
 
 			o(await resultP).deepEquals([1, 4])
+		})
+	})
+
+	o.spec("promiseTrySequentially", () => {
+		class MyError extends Error{}
+		const goodFunction = async () => 42
+		const badFunction = () => Promise.reject(new MyError("just an error"))
+		o("single function", async () => {
+			const arr = [goodFunction]
+			const result = await promiseTrySequentially(arr)
+			o(result).equals(42)
+		})
+
+		o("single function rejects", async () => {
+			const arr = [badFunction]
+			await assertThrows(MyError, () => promiseTrySequentially(arr))
+		})
+
+		o("first function rejects", async () => {
+			const arr = [badFunction, goodFunction]
+			const result = await promiseTrySequentially(arr)
+			o(result).equals(42)
+		})
+
+		o("first function resolves", async () => {
+			const arr = [goodFunction, badFunction]
+			const result = await promiseTrySequentially(arr)
+			o(result).equals(42)
+		})
+
+		o("all functions reject, last error is thrown", async () => {
+			const differentBadFunction = () => Promise.reject(new Error())
+			const arr = [differentBadFunction, badFunction]
+			await assertThrows(MyError, () => promiseTrySequentially(arr))
+		})
+
+		o("does not accept empty array", async () => {
+			await assertThrows(ProgrammingError, () => promiseTrySequentially([]))
 		})
 	})
 })
