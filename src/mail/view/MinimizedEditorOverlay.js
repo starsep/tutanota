@@ -15,9 +15,9 @@ import {isUpdateForTypeRef} from "../../api/main/EventController"
 import {promptAndDeleteMails} from "./MailGuiUtils"
 import {MailTypeRef} from "../../api/entities/tutanota/Mail"
 import {OperationType} from "../../api/common/TutanotaConstants"
+import {downcast, noOp, promiseMap} from "@tutao/tutanota-utils"
 import {isSameId} from "../../api/common/utils/EntityUtils"
-import {noOp} from "@tutao/tutanota-utils"
-import {promiseMap} from "@tutao/tutanota-utils"
+import {Dialog} from "../../gui/base/Dialog"
 
 const COUNTER_POS_OFFSET = px(-8)
 
@@ -37,10 +37,14 @@ export class MinimizedEditorOverlay implements MComponent<MinimizedEditorOverlay
 		this._eventController = eventController
 		this._listener = (updates: $ReadOnlyArray<EntityUpdateData>, eventOwnerGroupId: Id): Promise<*> => {
 			return promiseMap(updates, update => {
-				if (isUpdateForTypeRef(MailTypeRef, update) && update.operation === OperationType.DELETE) {
+				if (isUpdateForTypeRef(MailTypeRef, update) && update.operation !== OperationType.CREATE) {
 					let draft = minimizedEditor.sendMailModel.getDraft()
 					if (draft && isSameId(draft._id, [update.instanceListId, update.instanceId])) {
-						viewModel.removeMinimizedEditor(minimizedEditor)
+						if (update.operation === OperationType.DELETE) {
+							viewModel.removeMinimizedEditor(minimizedEditor)
+						} else if (update.operation === OperationType.UPDATE) {
+							minimizedEditor.stale = true
+						}
 					}
 				}
 			})
@@ -57,7 +61,34 @@ export class MinimizedEditorOverlay implements MComponent<MinimizedEditorOverlay
 		const buttons = [
 			{
 				label: "edit_action",
-				click: () => viewModel.reopenMinimizedEditor(minimizedEditor),
+				click: () => {
+					if (minimizedEditor.stale) {
+						console.log("confirm staleness")
+						Dialog.confirm("accountSwitchAdditionalPackagesActive_msg")
+						      .then(overrideUpdate => {
+							      if (overrideUpdate) {
+								      viewModel.reopenMinimizedEditor(minimizedEditor)
+							      } else {
+								      viewModel.removeMinimizedEditor(minimizedEditor)
+								      // open updated version?
+								      return Promise.all([
+									      minimizedEditor.sendMailModel.getMailboxDetails(), import("../editor/MailEditor")
+								      ]).then(([mailboxDetails, {newMailEditorFromDraft}]) => {
+									      const draft = minimizedEditor.sendMailModel.getDraft()
+									      console.log(draft)
+									      return newMailEditorFromDraft(downcast(draft),
+										      draft.attachments,
+										      "",
+										      false,
+										      Promise.resolve(new Map()),
+										      mailboxDetails)
+								      }).then(editor => editor.show())
+							      }
+						      })
+					} else {
+						viewModel.reopenMinimizedEditor(minimizedEditor)
+					}
+				},
 				type: ButtonType.ActionLarge,
 				icon: () => Icons.Edit,
 				colors: ButtonColors.DrawerNav,

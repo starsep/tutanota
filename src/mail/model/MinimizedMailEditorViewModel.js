@@ -18,7 +18,8 @@ export type MinimizedEditor = {
 	sendMailModel: SendMailModel, // we pass sendMailModel for easier access to contents of mail,
 	dispose: () => void, // disposes dialog and templatePopup eventListeners when minimized mail is removed
 	saveStatus: Stream<SaveStatusEnum>,
-	closeOverlayFunction: () => Promise<void>
+	closeOverlayFunction: () => Promise<void>,
+	stale: boolean // edited on a separate instance of the client while minimized
 }
 
 /**
@@ -40,7 +41,8 @@ export class MinimizedMailEditorViewModel {
 				dialog: dialog,
 				dispose: dispose,
 				saveStatus,
-				closeOverlayFunction
+				closeOverlayFunction,
+				stale: false
 			})
 		}
 		return lastThrow(this._minimizedEditors)

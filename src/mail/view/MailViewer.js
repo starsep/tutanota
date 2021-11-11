@@ -37,10 +37,8 @@ import {lang} from "../../misc/LanguageViewModel"
 import {assertMainOrNode, isAndroidApp, isDesktop, isIOSApp} from "../../api/common/Env"
 import {Dialog} from "../../gui/base/Dialog"
 import type {DeferredObject} from "@tutao/tutanota-utils"
+import {addAll, contains, defer, downcast, neverNull, noOp, ofClass, startsWith} from "@tutao/tutanota-utils"
 import {getMailBodyText, getMailHeaders} from "../../api/common/utils/Utils"
-import {defer, downcast, neverNull, noOp} from "@tutao/tutanota-utils"
-import {addAll, contains} from "@tutao/tutanota-utils"
-import {startsWith} from "@tutao/tutanota-utils"
 import {Request} from "../../api/common/WorkerProtocol.js"
 import {ConversationEntryTypeRef} from "../../api/entities/tutanota/ConversationEntry"
 import {
@@ -123,7 +121,6 @@ import {createMoreSecondaryButtonAttrs, getCoordsOfMouseOrTouchEvent, ifAllowedT
 import type {Link} from "../../misc/HtmlSanitizer"
 import {stringifyFragment} from "../../gui/HtmlUtils"
 import {IndexingNotSupportedError} from "../../api/common/error/IndexingNotSupportedError"
-import {ofClass} from "@tutao/tutanota-utils"
 import {CancelledError} from "../../api/common/error/CancelledError"
 import type {ConfigurationDatabase} from "../../api/worker/facades/ConfigurationDatabase"
 
@@ -941,8 +938,8 @@ export class MailViewer {
 			externalImageRule === ExternalImageRule.Block
 				? ContentBlockingStatus.AlwaysBlock
 				: (isAllowedAndAuthenticatedExternalSender
-					? ContentBlockingStatus.AlwaysShow
-					: (sanitizeResult.externalContent.length > 0 ? ContentBlockingStatus.Block : ContentBlockingStatus.NoExternalContent)
+						? ContentBlockingStatus.AlwaysShow
+						: (sanitizeResult.externalContent.length > 0 ? ContentBlockingStatus.Block : ContentBlockingStatus.NoExternalContent)
 				)
 
 		m.redraw()
@@ -1278,9 +1275,13 @@ export class MailViewer {
 			if (sendAllowed) {
 				// check if to be opened draft has already been minimized, iff that is the case, re-open it
 				const minimizedEditor = locator.minimizedMailModel.getEditorForDraft(this.mail)
-				if (minimizedEditor) {
+				if (minimizedEditor && !minimizedEditor.stale) {
 					locator.minimizedMailModel.reopenMinimizedEditor(minimizedEditor)
 				} else {
+					if (minimizedEditor) {
+						locator.minimizedMailModel.removeMinimizedEditor(minimizedEditor)
+					}
+
 					return Promise.all([this._mailModel.getMailboxDetailsForMail(this.mail), import("../editor/MailEditor")])
 					              .then(([mailboxDetails, {newMailEditorFromDraft}]) => {
 						              return newMailEditorFromDraft(this.mail,
