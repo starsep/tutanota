@@ -1,9 +1,9 @@
-import type {RecipientInfo} from "../api/common/RecipientInfo"
-import type {MailboxDetail} from "../mail/model/MailModel"
-import {getEnabledMailAddressesWithUser, getMailboxName} from "../mail/model/MailUtils"
-import type {LoginController} from "../api/main/LoginController"
-import {logins as globalLogins} from "../api/main/LoginController"
-import {assertMainOrNode} from "../api/common/Env"
+import type {RecipientInfo} from "../../api/common/RecipientInfo"
+import type {MailboxDetail} from "../../mail/model/MailModel"
+import {getEnabledMailAddressesWithUser, getMailboxName} from "../../mail/model/MailUtils"
+import type {LoginController} from "../../api/main/LoginController"
+import {logins as globalLogins} from "../../api/main/LoginController"
+import {assertMainOrNode} from "../../api/common/Env"
 
 assertMainOrNode()
 export const PASSWORD_MAX_VALUE = 100

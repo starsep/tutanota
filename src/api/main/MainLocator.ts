@@ -46,6 +46,7 @@ import {SecondFactorHandler} from "../../misc/2fa/SecondFactorHandler"
 import {WebauthnClient} from "../../misc/2fa/webauthn/WebauthnClient"
 import {UserManagementFacade} from "../worker/facades/UserManagementFacade"
 import {GroupManagementFacade} from "../worker/facades/GroupManagementFacade"
+import {WorkerRandomizer} from "../worker/WorkerImpl"
 
 assertMainOrNode()
 
@@ -84,6 +85,7 @@ export interface IMainLocator {
 	readonly userManagementFacade: UserManagementFacade
 	readonly contactFormFacade: ContactFormFacade
 	readonly deviceEncryptionFacade: DeviceEncryptionFacade
+	readonly random: WorkerRandomizer;
 	readonly init: () => Promise<void>
 	readonly initialized: Promise<void>
 }
@@ -118,6 +120,7 @@ class MainLocator implements IMainLocator {
 	userManagementFacade!: UserManagementFacade
 	contactFormFacade!: ContactFormFacade
 	deviceEncryptionFacade!: DeviceEncryptionFacade
+	random!: WorkerRandomizer
 
 	private _nativeInterfaces: NativeInterfaces | null = null
 
@@ -157,6 +160,7 @@ class MainLocator implements IMainLocator {
 		this._workerDeferred = defer()
 	}
 
+
 	async init(): Promise<void> {
 		// Split init in two separate parts: creating modules and causing side effects.
 		// We would like to do both on normal init but on HMR we just want to replace modules without a new worker. If we create a new
@@ -194,6 +198,7 @@ class MainLocator implements IMainLocator {
 			contactFormFacade,
 			deviceEncryptionFacade,
 			restInterface,
+			random
 		} = this.worker.getWorkerInterface()
 		this.loginFacade = loginFacade
 		this.customerFacade = customerFacade
@@ -219,6 +224,7 @@ class MainLocator implements IMainLocator {
 		this.secondFactorHandler = new SecondFactorHandler(this.eventController, this.entityClient, new WebauthnClient(), this.loginFacade)
 		this.credentialsProvider = await createCredentialsProvider(deviceEncryptionFacade, this._nativeInterfaces?.native ?? null)
 		this.mailModel = new MailModel(notifications, this.eventController, this.worker, this.mailFacade, this.entityClient)
+		this.random = random
 
 		const lazyScheduler = async () => {
 			const {AlarmSchedulerImpl} = await import("../../calendar/date/AlarmScheduler")

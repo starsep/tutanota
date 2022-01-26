@@ -37,9 +37,9 @@ export class RestClient {
 		method: HttpMethod,
 		queryParams: Dict,
 		headers: Dict,
-		body?: string | Uint8Array,
+		body?: string | Uint8Array | null,
 		responseType?: MediaType,
-		progressListener?: ProgressListener,
+		progressListener?: ProgressListener | null,
 		baseUrl?: string,
 	): Promise<any | null> {
 		this._checkRequestSizeLimit(path, method, body ?? null)

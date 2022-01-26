@@ -11,7 +11,7 @@ import type {ContactFormFacade} from "./facades/ContactFormFacade"
 import type {BrowserData} from "../../misc/ClientConstants"
 import type {InfoMessage} from "../common/CommonTypes"
 import {resolveSessionKey} from "./crypto/CryptoFacade"
-import {delay, downcast} from "@tutao/tutanota-utils"
+import {delay} from "@tutao/tutanota-utils"
 import type {EntityUpdate} from "../entities/sys/EntityUpdate"
 import type {WebsocketCounterData} from "../entities/sys/WebsocketCounterData"
 import type {ProgressMonitorId} from "../common/utils/ProgressMonitor"
@@ -45,6 +45,10 @@ import {RestClient} from "./rest/RestClient"
 
 assertWorkerOrNode()
 
+export interface WorkerRandomizer {
+	generateRandomNumber(numBytes: number): Promise<number>
+}
+
 /** Interface of the facades exposed by the worker, basically interface for the worker itself */
 export interface WorkerInterface {
 	readonly loginFacade: LoginFacade
@@ -65,6 +69,7 @@ export interface WorkerInterface {
 	readonly contactFormFacade: ContactFormFacade
 	readonly deviceEncryptionFacade: DeviceEncryptionFacade
 	readonly restInterface: EntityRestInterface
+	readonly random: WorkerRandomizer
 }
 
 /** Interface for the "main"/webpage context of the app, interface for the worker client. */
@@ -194,6 +199,13 @@ export class WorkerImpl implements NativeInterface {
 			get restInterface() {
 				return locator.cache
 			},
+			get random() {
+			return {
+				async generateRandomNumber(nbrOfBytes: number) {
+					return random.generateRandomNumber(nbrOfBytes)
+				}
+			}
+		}
 		}
 	}
 
