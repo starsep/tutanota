@@ -52,8 +52,28 @@ import {getRestPath} from "../../entities/ServiceUtils"
 import {Params} from "mithril"
 
 assertWorkerOrNode()
-const REST_PATH = "/rest/tutanota/filedataservice"
-const STORAGE_REST_PATH = `/rest/storage/${StorageService.BlobService}`
+
+type BlobDownloader<T> = (blobId: BlobId, headers: Params, body: string, server: TargetServer) => Promise<T>
+
+export type BlobUploadData<T extends Uint8Array | FileReference> = {
+	blobId: string
+	data: T
+}
+
+type FileEncryptor<T extends Uint8Array | FileReference> = (key: Aes128Key, t: T) => Promise<T>;
+
+type BlobSplitter<T extends Uint8Array | FileReference> = (data: T) => Promise<Array<BlobUploadData<T>>>;
+
+type BlobUploader<T extends Uint8Array | FileReference> = (url: string, headers: Params, blobId: string, data: T) => Promise<Uint8Array>;
+
+
+function _getBlobIdFromData(blob: Uint8Array): string {
+	return _getBlobIdFromHash(sha256Hash(blob))
+}
+
+function _getBlobIdFromHash(blobHash: Uint8Array): string {
+	return uint8ArrayToBase64(blobHash.slice(0, 6))
+}
 
 export class FileFacade {
 	_login: LoginFacadeImpl
