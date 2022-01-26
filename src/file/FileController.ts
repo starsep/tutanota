@@ -88,7 +88,6 @@ export class FileController {
 					fileFacade.downloadFileContentNative(f)
 							  .catch(ofClass(CryptoError, () => showErr("corrupted_msg", f.name)))
 							  .catch(ofClass(ConnectionError, () => showErr("couldNotAttachFile_msg", f.name))),
-				{concurrency: 1}
 			)
 			const files = fileResults.filter(isNotNull)
 			for (const file of files) {
@@ -101,7 +100,6 @@ export class FileController {
 					fileFacade.downloadFileContentNative(f)
 							  .catch(ofClass(CryptoError, () => showErr("corrupted_msg", f.name)))
 							  .catch(ofClass(ConnectionError, () => showErr("couldNotAttachFile_msg", f.name))),
-				{concurrency: 1}
 			)
 			const files = fileResults.filter(isNotNull)
 			for (const file of files) {
@@ -114,7 +112,6 @@ export class FileController {
 					fileFacade.downloadFileContent(f)
 							  .catch(ofClass(CryptoError, () => showErr("corrupted_msg", f.name)))
 							  .catch(ofClass(ConnectionError, () => showErr("couldNotAttachFile_msg", f.name))),
-				{concurrency: 1}
 			)
 			const files = fileResults.filter(isNotNull)
 			const zip = await this.zipDataFiles(files, `${sortableTimestamp()}-attachments.zip`)

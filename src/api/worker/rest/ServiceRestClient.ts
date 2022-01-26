@@ -12,7 +12,7 @@ import type {Entity} from "../../common/EntityTypes"
 
 assertWorkerOrNode()
 
-export function _service<T extends Entity>(
+export async function _service<T extends Entity>(
 	service: SysService | TutanotaService | MonitorService | AccountingService | StorageService,
 	method: HttpMethod,
 	requestEntity?: any,
@@ -21,38 +21,26 @@ export function _service<T extends Entity>(
 	sk?: Aes128Key,
 	extraHeaders?: Dict,
 ): Promise<any> {
-	return resolveTypeReference(requestEntity ? requestEntity._type : downcast(responseTypeRef)).then(modelForAppAndVersion => {
-		let path = `/rest/${modelForAppAndVersion.app.toLowerCase()}/${service}`
-		let queryParams = queryParameter != null ? queryParameter : {}
-		const headers = Object.assign(locator.login.createAuthHeaders(), extraHeaders)
-		headers["v"] = modelForAppAndVersion.version
-		let p: Promise<Record<string, any> | null> | null = null
+	const modelForAppAndVersion = await resolveTypeReference((requestEntity) ? requestEntity._type : downcast(responseTypeRef))
+	let path = `/rest/${modelForAppAndVersion.app.toLowerCase()}/${service}`
+	let queryParams = queryParameter != null ? queryParameter : {}
+	const headers = Object.assign(locator.login.createAuthHeaders(), extraHeaders)
+	headers["v"] = modelForAppAndVersion.version
 
-		if (requestEntity != null) {
-			p = resolveTypeReference(requestEntity._type).then(requestTypeModel => {
-				if (requestTypeModel.encrypted && sk == null) {
-					return Promise.reject(new Error("must provide a session key for an encrypted data transfer type!: " + service))
-				}
-
-				return locator.instanceMapper.encryptAndMapToLiteral(requestTypeModel, requestEntity, sk ?? null)
-			})
-		} else {
-			p = Promise.resolve(null)
+	let encryptedEntity: Record<string, unknown> | null = null
+	if (requestEntity != null) {
+		let requestTypeModel = await resolveTypeReference(requestEntity._type)
+		if (requestTypeModel.encrypted && sk == null) {
+			return Promise.reject(new Error("must provide a session key for an encrypted data transfer type!: " + service))
 		}
+		encryptedEntity = await locator.instanceMapper.encryptAndMapToLiteral(requestTypeModel, requestEntity, sk ?? null)
+	}
 
-		return p.then(encryptedEntity => {
-			return locator.restClient
-						  .request(path, method, queryParams, neverNull(headers), encryptedEntity ? JSON.stringify(encryptedEntity) : undefined, MediaType.Json)
-						  .then(data => {
-							  if (responseTypeRef) {
-								  return resolveTypeReference(responseTypeRef).then(responseTypeModel => {
-									  let instance = JSON.parse(data)
-									  return locator.crypto.resolveServiceSessionKey(responseTypeModel, instance).then(resolvedSessionKey => {
-										  return locator.instanceMapper.decryptAndMapToInstance(responseTypeModel, instance, resolvedSessionKey ? resolvedSessionKey : sk ?? null)
-									  })
-								  })
-							  }
-						  })
-		})
-	})
+	const data = await locator.restClient.request(path, method, queryParams, neverNull(headers), encryptedEntity ? JSON.stringify(encryptedEntity) : undefined, MediaType.Json)
+	if (responseTypeRef) {
+		let responseTypeModel = await resolveTypeReference(responseTypeRef)
+		let instance = JSON.parse(data)
+		let resolvedSessionKey = await locator.crypto.resolveServiceSessionKey(responseTypeModel, instance)
+		return locator.instanceMapper.decryptAndMapToInstance(responseTypeModel, instance, resolvedSessionKey ? resolvedSessionKey : sk ?? null)
+	}
 }

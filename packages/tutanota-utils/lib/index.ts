@@ -36,6 +36,7 @@ export {
 	difference,
 	symmetricDifference,
 	partition,
+	splitUint8ArrayInChunks,
 } from "./ArrayUtils.js"
 export {AsyncResult} from "./AsyncResult.js"
 export {intersection} from "./CollectionUtils.js"
@@ -93,6 +94,7 @@ export {
 	tap,
 	ofClass,
 	promiseFilter,
+	promiseTrySequentially,
 } from "./PromiseUtils.js"
 export type {PromiseMapFn, $Promisable} from "./PromiseUtils.js"
 export {SortedArray} from "./SortedArray.js"

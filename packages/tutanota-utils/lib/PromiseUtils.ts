@@ -16,10 +16,10 @@ export function mapInCallContext<T, U>(values: T[], callback: PromiseMapCallback
 }
 
 function _mapInCallContext<T, U>(
-		values: T[],
-		callback: PromiseMapCallback<T, U>,
-		index: number,
-		acc: U[],
+	values: T[],
+	callback: PromiseMapCallback<T, U>,
+	index: number,
+	acc: U[],
 ): $Promisable<Array<U>> {
 	if (index >= values.length) {
 		return acc
@@ -40,9 +40,9 @@ function _mapInCallContext<T, U>(
 
 export {pMap as promiseMap} from "./PromiseMap.js"
 export type PromiseMapFn = <T, U>(
-		values: T[],
-		callback: PromiseMapCallback<T, U>,
-		options?: PromiseMapOptions,
+	values: T[],
+	callback: PromiseMapCallback<T, U>,
+	options?: PromiseMapOptions,
 ) => PromisableWrapper<U[]>
 
 function mapNoFallback<T, U>(values: Array<T>, callback: PromiseMapCallback<T, U>, options?: PromiseMapOptions) {
@@ -71,8 +71,8 @@ export class PromisableWrapper<T> {
 	}
 
 	thenOrApply<R>(
-			onFulfill: (arg0: T) => $Promisable<PromisableWrapper<R> | R>,
-			onReject?: (arg0: any) => $Promisable<R | PromisableWrapper<R>>,
+		onFulfill: (arg0: T) => $Promisable<PromisableWrapper<R> | R>,
+		onReject?: (arg0: any) => $Promisable<R | PromisableWrapper<R>>,
 	): PromisableWrapper<R> {
 		if (this.value instanceof Promise) {
 			const v: Promise<PromisableWrapper<R> | R> = this.value.then(onFulfill, onReject)
@@ -147,8 +147,8 @@ export function ofClass<E, R>(cls: Class<E>, catcher: (arg0: E) => $Promisable<R
  * Filter iterable. Just like Array.prototype.filter but callback can return promises
  */
 export async function promiseFilter<T>(
-		iterable: Iterable<T>,
-		filter: (item: T, index: number) => $Promisable<boolean>,
+	iterable: Iterable<T>,
+	filter: (item: T, index: number) => $Promisable<boolean>,
 ): Promise<Array<T>> {
 	let index = 0
 	const result: T[] = []
@@ -162,4 +162,28 @@ export async function promiseFilter<T>(
 	}
 
 	return result
+}
+
+/**
+ * Executes the provided functions in the provided order to retrieve a result.
+ *
+ * Short circuits after the first resolving function. Returns the last rejection if no
+ * function resolves.
+ *
+ * @throws Error if invoked with empty function array
+ * @param fns Non-empty array of asynchronous functions
+ * @returns {Promise<unknown>|*}
+ */
+export function promiseTrySequentially<T>(fns: Array<() => Promise<T>>): Promise<T> {
+	if (fns.length === 0) {
+		return Promise.reject(new Error("no functions to try"))
+	}
+
+	return fns[0]().catch(e => {
+		if (fns.length > 1) {
+			return promiseTrySequentially(fns.slice(1))
+		} else {
+			throw e
+		}
+	})
 }

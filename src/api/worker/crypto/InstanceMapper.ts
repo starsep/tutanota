@@ -232,11 +232,11 @@ function convertDbToJsType(type: Values<typeof ValueType>, value: Base64 | strin
 	}
 }
 
-function compressString(uncompressed: string): Uint8Array {
+export function compressString(uncompressed: string): Uint8Array {
 	return compress(stringToUtf8Uint8Array(uncompressed))
 }
 
-function decompressString(compressed: Uint8Array): string {
+export function decompressString(compressed: Uint8Array): string {
 	if (compressed.length === 0) {
 		return ""
 	}

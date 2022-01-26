@@ -34,7 +34,8 @@ import {
 	byteLength,
 	contains,
 	defer,
-	downcast, isNotNull,
+	downcast,
+	isNotNull,
 	isSameTypeRefByAttr,
 	neverNull,
 	noOp,
@@ -162,6 +163,13 @@ export class MailFacade {
 		service.ownerEncSessionKey = encryptKey(mailGroupKey, sk)
 		service.symEncSessionKey = encryptKey(userGroupKey, sk) // legacy
 
+		const draftCreateData = createDraftCreateData({
+			previousMessageId,
+			conversationType,
+			ownerEncSessionKey: encryptKey(mailGroupKey, sk),
+			symEncSessionKey: encryptKey(userGroupKey, sk) //legacy
+		})
+
 		service.draftData = createDraftData({
 			subject,
 			bodyText,
@@ -173,16 +181,18 @@ export class MailFacade {
 			ccRecipients,
 			bccRecipients,
 			replyTos,
-			addedAttachments: await this._createAddedAttachments(attachments, [], mailGroupKey),
+			addedAttachments: attachments
+				? await this._createAddedAttachments(attachments, [], mailGroupKey)
+				: []
 		})
-		const createDraftReturn = await serviceRequest(TutanotaService.DraftService, HttpMethod.POST, service, DraftCreateReturnTypeRef, undefined, sk)
+		const createDraftReturn = await serviceRequest(TutanotaService.DraftService, HttpMethod.POST, draftCreateData, DraftCreateReturnTypeRef, undefined, sk)
 		return this._entityClient.load(MailTypeRef, createDraftReturn.draft)
 	}
 
 	/**
 	 * Updates a draft mail.
 	 * @param subject The subject of the mail.
-	 * @param body The body text of the mail.
+	 * @param bodyText The body text of the mail.
 	 * @param senderMailAddress The senders mail address.
 	 * @param senderName The name of the sender that is sent together with the mail address of the sender.
 	 * @param toRecipients The recipients the mail shall be sent to.
@@ -195,7 +205,7 @@ export class MailFacade {
 	 */
 	async updateDraft(
 		subject: string,
-		body: string,
+		bodyText: string,
 		senderMailAddress: string,
 		senderName: string,
 		toRecipients: Array<DraftRecipient>,
@@ -205,8 +215,8 @@ export class MailFacade {
 		confidential: boolean,
 		draft: Mail,
 	): Promise<Mail> {
-		if (byteLength(body) > UNCOMPRESSED_MAX_SIZE) {
-			throw new MailBodyTooLargeError(`Can't update draft, mail body too large (${byteLength(body)})`)
+		if (byteLength(bodyText) > UNCOMPRESSED_MAX_SIZE) {
+			throw new MailBodyTooLargeError(`Can't update draft, mail body too large (${byteLength(bodyText)})`)
 		}
 
 		const senderMailGroupId = await this._getMailGroupIdForMailAddress(this._login.getLoggedInUser(), senderMailAddress)
@@ -214,28 +224,30 @@ export class MailFacade {
 		const mailGroupKey = this._login.getGroupKey(senderMailGroupId)
 
 		const sk = decryptKey(mailGroupKey, draft._ownerEncSessionKey as any)
-		const service = createDraftUpdateData()
-		service.draft = draft._id
-		service.draftData = createDraftData({
-			subject: subject,
-			bodyText: body,
-			senderMailAddress: senderMailAddress,
-			senderName: senderName,
-			confidential: confidential,
+		const draftUpdateData = createDraftUpdateData()
+		draftUpdateData.draft = draft._id
+		draftUpdateData.draftData = createDraftData({
+			subject,
+			bodyText,
+			senderMailAddress,
+			senderName,
+			confidential,
 			method: draft.method,
 			toRecipients,
 			ccRecipients,
 			bccRecipients,
 			replyTos: draft.replyTos,
 			removedAttachments: this._getRemovedAttachments(attachments, draft.attachments),
-			addedAttachments: await this._createAddedAttachments(attachments, draft.attachments, mailGroupKey),
+			addedAttachments: attachments
+				? await this._createAddedAttachments(attachments, draft.attachments, mailGroupKey)
+				: [],
 		})
 		this._deferredDraftId = draft._id
 		// we have to wait for the updated mail because sendMail() might be called right after this update
 		this._deferredDraftUpdate = defer()
 		// use a local reference here because this._deferredDraftUpdate is set to null when the event is received async
 		const deferredUpdatePromiseWrapper = this._deferredDraftUpdate
-		await serviceRequest(TutanotaService.DraftService, HttpMethod.PUT, service, DraftUpdateReturnTypeRef, undefined, sk)
+		await serviceRequest(TutanotaService.DraftService, HttpMethod.PUT, draftUpdateData, DraftUpdateReturnTypeRef, undefined, sk)
 		return deferredUpdatePromiseWrapper.promise
 	}
 
@@ -265,51 +277,52 @@ export class MailFacade {
 	/**
 	 * Uploads the given data files or sets the file if it is already existing files (e.g. forwarded files) and returns all DraftAttachments
 	 */
-	_createAddedAttachments(
-		providedFiles: Attachments | null,
+	async _createAddedAttachments(
+		providedFiles: Attachments,
 		existingFileIds: ReadonlyArray<IdTuple>,
 		mailGroupKey: Aes128Key,
 	): Promise<DraftAttachment[]> {
-		if (providedFiles) {
-			return promiseMap(providedFiles, providedFile => {
-				// check if this is a new attachment or an existing one
-				if (providedFile._type === "DataFile") {
-					// user added attachment
-					const fileSessionKey = aes128RandomKey()
-					const dataFile = downcast<DataFile>(providedFile)
-					return this._file.uploadFileData(dataFile, fileSessionKey).then(fileDataId => {
-						return this.createAndEncryptDraftAttachment(fileDataId, fileSessionKey, dataFile, mailGroupKey)
-					})
-				} else if (providedFile._type === "FileReference") {
-					const fileSessionKey = aes128RandomKey()
-					const fileRef = downcast<FileReference>(providedFile)
-					return this._file.uploadFileDataNative(fileRef, fileSessionKey).then(fileDataId => {
-						return this.createAndEncryptDraftAttachment(fileDataId, fileSessionKey, fileRef, mailGroupKey)
-					})
-				} else if (!containsId(existingFileIds, getLetId(providedFile))) {
-					// forwarded attachment which was not in the draft before
-					return resolveSessionKey(FileTypeModel, providedFile).then(fileSessionKey => {
-						const attachment = createDraftAttachment()
-						attachment.existingFile = getLetId(providedFile)
-						attachment.ownerEncFileSessionKey = encryptKey(mailGroupKey, neverNull(fileSessionKey))
-						return attachment
-					})
-				} else {
-					return null
-				}
-			}) // disable concurrent file upload to avoid timeout because of missing progress events on Firefox.
-				.then(attachments => attachments.filter(isNotNull))
-				.then(it => {
-					// only delete the temporary files after all attachments have been uploaded
-					if (isApp()) {
-						this._file.clearFileData().catch(e => console.warn("Failed to clear files", e))
-					}
-
-					return it
+		const attachments = await promiseMap(providedFiles, async providedFile => {
+			// check if this is a new attachment or an existing one
+			if (providedFile._type === "FileReference" || providedFile._type === "DataFile") {
+				// user added attachment
+				const file = downcast<FileReference | DataFile>(providedFile)
+				const fileSessionKey = aes128RandomKey()
+				const fileDataId = await this._file.uploadFile(file, fileSessionKey)
+				return this.createAndEncryptDraftAttachment(fileDataId, fileSessionKey, file, mailGroupKey)
+			} else if (providedFile._type === "FileReference") {
+				const fileSessionKey = aes128RandomKey()
+				const fileRef = downcast<FileReference>(providedFile)
+				return this._file.uploadFileDataNative(fileRef, fileSessionKey).then(fileDataId => {
+					return this.createAndEncryptDraftAttachment(fileDataId, fileSessionKey, fileRef, mailGroupKey)
 				})
-		} else {
-			return Promise.resolve([])
+			} else if (!containsId(existingFileIds, getLetId(providedFile))) {
+				// forwarded attachment which was not in the draft before
+				const fileSessionKey = await resolveSessionKey(FileTypeModel, providedFile)
+				const attachment = createDraftAttachment()
+				attachment.existingFile = getLetId(providedFile)
+				attachment.ownerEncFileSessionKey = encryptKey(mailGroupKey, neverNull(fileSessionKey))
+				return attachment
+			} else {
+				return null
+			}
+		})
+			.then(attachments => attachments.filter(isNotNull))
+			.then(it => {
+				// only delete the temporary files after all attachments have been uploaded
+				if (isApp()) {
+					this._file.clearFileData().catch(e => console.warn("Failed to clear files", e))
+				}
+
+				return it
+			})
+
+		// only delete the temporary files after all attachments have been uploaded
+		if (isApp()) {
+			this._file.clearFileData()
+				.catch((e) => console.warn("Failed to clear files", e))
 		}
+		return attachments.filter(isNotNull)
 	}
 
 	createAndEncryptDraftAttachment(
@@ -332,9 +345,10 @@ export class MailFacade {
 	async sendDraft(draft: Mail, recipients: Array<RecipientDetails>, language: string): Promise<void> {
 		const senderMailGroupId = await this._getMailGroupIdForMailAddress(this._login.getLoggedInUser(), draft.sender.address)
 		const bucketKey = aes128RandomKey()
-		const sendDraftData = createSendDraftData()
-		sendDraftData.language = language
-		sendDraftData.mail = draft._id
+		const sendDraftData = createSendDraftData({
+			language,
+			mail: draft._id
+		})
 
 		for (let fileId of draft.attachments) {
 			const file = await this._entityClient.load(FileTypeRef, fileId)
@@ -546,23 +560,24 @@ export class MailFacade {
 							   let tutanotaPropertiesSessionKey = aes128RandomKey()
 							   let mailboxSessionKey = aes128RandomKey()
 							   let userEncEntropy = encryptBytes(externalUserGroupKey, random.generateRandomData(32))
-							   let d = createExternalUserData()
-							   d.verifier = verifier
-							   d.userEncClientKey = encryptKey(externalUserGroupKey, clientKey)
-							   d.externalUserEncUserGroupInfoSessionKey = encryptKey(externalUserGroupKey, externalUserGroupInfoSessionKey)
-							   d.internalMailEncUserGroupInfoSessionKey = encryptKey(internalMailGroupKey, externalUserGroupInfoSessionKey)
-							   d.externalUserEncMailGroupKey = encryptKey(externalUserGroupKey, externalMailGroupKey)
-							   d.externalMailEncMailGroupInfoSessionKey = encryptKey(externalMailGroupKey, externalMailGroupInfoSessionKey)
-							   d.internalMailEncMailGroupInfoSessionKey = encryptKey(internalMailGroupKey, externalMailGroupInfoSessionKey)
-							   d.externalUserEncEntropy = userEncEntropy
-							   d.externalUserEncTutanotaPropertiesSessionKey = encryptKey(externalUserGroupKey, tutanotaPropertiesSessionKey)
-							   d.externalMailEncMailBoxSessionKey = encryptKey(externalMailGroupKey, mailboxSessionKey)
-							   let userGroupData = createCreateExternalUserGroupData()
-							   userGroupData.mailAddress = cleanedMailAddress
-							   userGroupData.externalPwEncUserGroupKey = encryptKey(externalUserPwKey, externalUserGroupKey)
-							   userGroupData.internalUserEncUserGroupKey = encryptKey(this._login.getUserGroupKey(), externalUserGroupKey)
-							   d.userGroupData = userGroupData
-							   return serviceRequestVoid(TutanotaService.ExternalUserService, HttpMethod.POST, d).then(() => {
+							   const externalUserData = createExternalUserData({
+								   verifier,
+								   userEncClientKey: encryptKey(externalUserGroupKey, clientKey),
+								   externalUserEncUserGroupInfoSessionKey: encryptKey(externalUserGroupKey, externalUserGroupInfoSessionKey),
+								   internalMailEncUserGroupInfoSessionKey: encryptKey(internalMailGroupKey, externalUserGroupInfoSessionKey),
+								   externalUserEncMailGroupKey: encryptKey(externalUserGroupKey, externalMailGroupKey),
+								   externalMailEncMailGroupInfoSessionKey: encryptKey(externalMailGroupKey, externalMailGroupInfoSessionKey),
+								   internalMailEncMailGroupInfoSessionKey: encryptKey(internalMailGroupKey, externalMailGroupInfoSessionKey),
+								   externalUserEncEntropy: userEncEntropy,
+								   externalUserEncTutanotaPropertiesSessionKey: encryptKey(externalUserGroupKey, tutanotaPropertiesSessionKey),
+								   externalMailEncMailBoxSessionKey: encryptKey(externalMailGroupKey, mailboxSessionKey),
+								   userGroupData: createCreateExternalUserGroupData({
+									   mailAddress: cleanedMailAddress,
+									   externalPwEncUserGroupKey: encryptKey(externalUserPwKey, externalUserGroupKey),
+									   internalUserEncUserGroupKey: encryptKey(this._login.getUserGroupKey(), externalUserGroupKey)
+								   })
+							   })
+							   return serviceRequestVoid(TutanotaService.ExternalUserService, HttpMethod.POST, externalUserData).then(() => {
 								   return {
 									   externalUserGroupKey: externalUserGroupKey,
 									   externalMailGroupKey: externalMailGroupKey,

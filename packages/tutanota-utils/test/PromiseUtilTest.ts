@@ -5,6 +5,7 @@ import {
     PromisableWrapper as PromiseableWrapper,
     promiseFilter,
     promiseMap,
+	promiseTrySequentially,
 } from "../lib/PromiseUtils.js"
 import {defer} from "../lib/Utils.js"
 import {assertThrows} from "@tutao/tutanota-test-utils"
@@ -174,4 +175,43 @@ o.spec("PromiseUtils", function () {
             o(await resultP).deepEquals([1, 4])
         })
     })
+
+
+	o.spec("promiseTrySequentially", () => {
+		class MyError extends Error{}
+		const goodFunction = async () => 42
+		const badFunction = () => Promise.reject(new MyError("just an error"))
+		o("single function", async () => {
+			const arr = [goodFunction]
+			const result = await promiseTrySequentially(arr)
+			o(result).equals(42)
+		})
+
+		o("single function rejects", async () => {
+			const arr = [badFunction]
+			await assertThrows(MyError, () => promiseTrySequentially(arr))
+		})
+
+		o("first function rejects", async () => {
+			const arr = [badFunction, goodFunction]
+			const result = await promiseTrySequentially(arr)
+			o(result).equals(42)
+		})
+
+		o("first function resolves", async () => {
+			const arr = [goodFunction, badFunction]
+			const result = await promiseTrySequentially(arr)
+			o(result).equals(42)
+		})
+
+		o("all functions reject, last error is thrown", async () => {
+			const differentBadFunction = () => Promise.reject(new Error())
+			const arr = [differentBadFunction, badFunction]
+			await assertThrows(MyError, () => promiseTrySequentially(arr))
+		})
+
+		o("does not accept empty array", async () => {
+			await assertThrows(Error, () => promiseTrySequentially([]))
+		})
+	})
 })

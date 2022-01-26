@@ -65,6 +65,7 @@ declare type NativeRequestType = 'init'
 	| 'storePushIdentifierLocally'
 	| 'closePushNotifications'
 	| 'readDataFile'
+	| 'downloadBlob' // needs to be implemented natively
 	| 'saveBlob'
 	| 'putFileIntoDownloads'
 	| 'findInPage'
@@ -100,6 +101,11 @@ declare type NativeRequestType = 'init'
 	| 'encryptUsingKeychain'
 	| 'decryptUsingKeychain'
 	| 'getSupportedEncryptionModes'
+	// needs to be implemented natively
+	| 'joinFiles'
+	| 'splitFileIntoBlobs'
+	| 'hashFile'
+	| 'getTempFileUri'
 
 /** Requests from native to web */
 declare type JsRequestType = 'createMailEditor'
