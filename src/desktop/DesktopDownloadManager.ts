@@ -99,6 +99,7 @@ export class DesktopDownloadManager {
 			errorId: getHttpHeader(response.headers, "error-id"),
 			precondition: getHttpHeader(response.headers, "precondition"),
 			suspensionTime: getHttpHeader(response.headers, "suspension-time") ?? getHttpHeader(response.headers, "retry-after"),
+			responseBody: null,
 		}
 
 		console.log("Download finished", result.statusCode, result.suspensionTime)
