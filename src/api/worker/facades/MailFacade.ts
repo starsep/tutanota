@@ -290,12 +290,6 @@ export class MailFacade {
 				const fileSessionKey = aes128RandomKey()
 				const fileDataId = await this._file.uploadFile(file, fileSessionKey)
 				return this.createAndEncryptDraftAttachment(fileDataId, fileSessionKey, file, mailGroupKey)
-			} else if (providedFile._type === "FileReference") {
-				const fileSessionKey = aes128RandomKey()
-				const fileRef = downcast<FileReference>(providedFile)
-				return this._file.uploadFileDataNative(fileRef, fileSessionKey).then(fileDataId => {
-					return this.createAndEncryptDraftAttachment(fileDataId, fileSessionKey, fileRef, mailGroupKey)
-				})
 			} else if (!containsId(existingFileIds, getLetId(providedFile))) {
 				// forwarded attachment which was not in the draft before
 				const fileSessionKey = await resolveSessionKey(FileTypeModel, providedFile)

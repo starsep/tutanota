@@ -1,16 +1,18 @@
 import {Request} from "../../api/common/MessageDispatcher"
-import {uint8ArrayToBase64} from "@tutao/tutanota-utils"
+import {promiseMap, uint8ArrayToBase64} from "@tutao/tutanota-utils"
 import type {MailBundle} from "../../mail/export/Bundler"
-import {promiseMap} from "@tutao/tutanota-utils"
 import type {NativeInterface} from "./NativeInterface"
 import {FileReference} from "../../api/common/utils/FileUtils";
 import {DataFile} from "../../api/common/DataFile";
+import {BlobUploadData} from "../../api/worker/facades/FileFacade"
+import {MAX_BLOB_SIZE_BYTES} from "../../api/common/TutanotaConstants"
 
 export type DataTaskResponse = {
 	statusCode: number
 	errorId: string | null
 	precondition: string | null
 	suspensionTime: string | null
+	responseBody: Uint8Array | null
 }
 export type DownloadTaskResponse = DataTaskResponse & {
 	encryptedFileUri: string | null
@@ -22,6 +24,17 @@ export class NativeFileApp {
 	constructor(nativeInterface: NativeInterface) {
 		this.native = nativeInterface
 	}
+
+	async splitFileIntoBlobs(file: FileReference): Promise<Array<BlobUploadData<FileReference>>> {
+		const response: Array<{blobId: string, uri: string}> = await this.native.invokeNative(
+			new Request("splitFileIntoBlobs", [file.location, MAX_BLOB_SIZE_BYTES])
+		)
+		return promiseMap(response, async ({blobId, uri}) => ({
+				blobId, data: await this.uriToFileRef(uri)
+			}
+		))
+	}
+
 
 	/**
 	 * Open the file
@@ -97,6 +110,14 @@ export class NativeFileApp {
 		return this.native.invokeNative(new Request("putFileIntoDownloads", [localFileUri]))
 	}
 
+	joinFiles(filename: string, files: Array<string>): Promise<string> {
+		return this.native.invokeNative(new Request('joinFiles', [filename, files]))
+	}
+
+	downloadBlob(headers: Dict, body: string, url: string, filename: string): Promise<DownloadTaskResponse> {
+		return this.native.invokeNative(new Request('downloadBlob', [headers, body, url, filename])) // fixme args
+	}
+
 	saveBlob(data: DataFile): Promise<void> {
 		return this.native.invokeNative(new Request("saveBlob", [data.name, uint8ArrayToBase64(data.data)]))
 	}
@@ -112,8 +133,16 @@ export class NativeFileApp {
 	 * Downloads the binary data of a file from tutadb and stores it in the internal memory.
 	 * @returns Resolves to the URI of the downloaded file
 	 */
-	download(sourceUrl: string, filename: string, headers: Record<string, any>): Promise<DownloadTaskResponse> {
-		return this.native.invokeNative(new Request("download", [sourceUrl, filename, headers]))
+	download(url: string, headers: Dict, filename: string): Promise<DownloadTaskResponse> {
+		return this.native.invokeNative(new Request('download', [url, headers, filename]))
+	}
+
+	getTempFileUri(filename: string): Promise<string> {
+		return this.native.invokeNative(new Request("getTempFileUri", [filename]))
+	}
+
+	hashFile(filename: string): Promise<string> {
+		return this.native.invokeNative(new Request('hashFile', [filename]))
 	}
 
 	clearFileData(): Promise<any> {
@@ -152,16 +181,7 @@ export class NativeFileApp {
 	}
 
 	getFilesMetaData(filesUris: string[]): Promise<Array<FileReference>> {
-		return promiseMap(filesUris, async uri => {
-			const [name, mimeType, size] = await Promise.all([this.getName(uri), this.getMimeType(uri), this.getSize(uri)])
-			return {
-				_type: "FileReference",
-				name,
-				mimeType,
-				size,
-				location: uri,
-			}
-		})
+		return promiseMap(filesUris, this.uriToFileRef)
 	}
 
 	uriToFileRef(uri: string): Promise<FileReference> {

@@ -4,7 +4,6 @@ import {showSpellcheckLanguageDialog} from "../../gui/dialogs/SpellcheckLanguage
 import {CancelledError} from "../../api/common/error/CancelledError"
 import {noOp, ofClass} from "@tutao/tutanota-utils"
 import m from "mithril";
-import {Shortcut} from "../../misc/KeyManager"
 
 type JsRequest = Request<JsRequestType>
 
