@@ -22,4 +22,5 @@ export const enum TutanotaService {
 	ReportMailService = "reportmailservice",
 	EntropyService = "entropyservice",
 	TemplateGroupService = "templategroupservice",
+	FileBlobService = "fileblobservice",
 }

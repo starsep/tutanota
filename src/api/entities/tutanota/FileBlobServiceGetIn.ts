@@ -3,18 +3,18 @@ import {TypeRef, downcast} from "@tutao/tutanota-utils"
 import type {TypeModel} from "../../common/EntityTypes.js"
 
 
-export const DraftCreateReturnTypeRef: TypeRef<DraftCreateReturn> = new TypeRef("tutanota", "DraftCreateReturn")
+export const FileBlobServiceGetInTypeRef: TypeRef<FileBlobServiceGetIn> = new TypeRef("tutanota", "FileBlobServiceGetIn")
 export const _TypeModel: TypeModel = {
-	"name": "DraftCreateReturn",
-	"since": 11,
+	"name": "FileBlobServiceGetIn",
+	"since": 50,
 	"type": "DATA_TRANSFER_TYPE",
-	"id": 516,
-	"rootId": "CHR1dGFub3RhAAIE",
+	"id": 1229,
+	"rootId": "CHR1dGFub3RhAATN",
 	"versioned": false,
 	"encrypted": false,
 	"values": {
 		"_format": {
-			"id": 517,
+			"id": 1230,
 			"type": "Number",
 			"cardinality": "One",
 			"final": false,
@@ -22,26 +22,26 @@ export const _TypeModel: TypeModel = {
 		}
 	},
 	"associations": {
-		"draft": {
-			"id": 518,
+		"file": {
+			"id": 1231,
 			"type": "LIST_ELEMENT_ASSOCIATION",
 			"cardinality": "One",
 			"final": false,
-			"refType": "Mail"
+			"refType": "File"
 		}
 	},
 	"app": "tutanota",
 	"version": "50"
 }
 
-export function createDraftCreateReturn(values?: Partial<DraftCreateReturn>): DraftCreateReturn {
-	return Object.assign(create(_TypeModel, DraftCreateReturnTypeRef), downcast<DraftCreateReturn>(values))
+export function createFileBlobServiceGetIn(values?: Partial<FileBlobServiceGetIn>): FileBlobServiceGetIn {
+	return Object.assign(create(_TypeModel, FileBlobServiceGetInTypeRef), downcast<FileBlobServiceGetIn>(values))
 }
 
-export type DraftCreateReturn = {
-	_type: TypeRef<DraftCreateReturn>;
+export type FileBlobServiceGetIn = {
+	_type: TypeRef<FileBlobServiceGetIn>;
 
 	_format: NumberString;
 
-	draft: IdTuple;
+	file: IdTuple;
 }

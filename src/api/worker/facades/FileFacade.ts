@@ -1,4 +1,4 @@
-import {_TypeModel as FileDataDataGetTypeModel, createFileDataDataGet, FileDataDataGet} from "../../entities/tutanota/FileDataDataGet"
+import {_TypeModel as FileDataDataGetTypeModel} from "../../entities/tutanota/FileDataDataGet"
 import {addParamsToUrl, isSuspensionResponse, RestClient} from "../rest/RestClient"
 import {encryptBytes, resolveSessionKey} from "../crypto/CryptoFacade"
 import type {File as TutanotaFile} from "../../entities/tutanota/File"
@@ -12,6 +12,7 @@ import {
 	filterInt,
 	isEmpty,
 	neverNull,
+	promiseMap,
 	promiseTrySequentially,
 	splitUint8ArrayInChunks,
 	TypeRef,
@@ -48,6 +49,8 @@ import {TargetServer} from "../../entities/sys/TargetServer"
 import {locator} from "../WorkerLocator"
 import {ProgrammingError} from "../../common/error/ProgrammingError"
 import {createBlobReferenceDataPut} from "../../entities/storage/BlobReferenceDataPut"
+import {FileBlobServiceGetOut, FileBlobServiceGetOutTypeRef} from "../../entities/tutanota/FileBlobServiceGetOut"
+import {createFileBlobServiceGetIn, FileBlobServiceGetIn} from "../../entities/tutanota/FileBlobServiceGetIn"
 
 assertWorkerOrNode()
 
@@ -232,7 +235,26 @@ export class FileFacade {
 	}
 
 	async _downloadBlobsOfFile<T>(file: TutanotaFile, downloader: BlobDownloader<T>): Promise<Array<T>> {
-		throw new Error("downloading blob files has not been implemented yet")
+		const serviceReturn: FileBlobServiceGetOut = await serviceRequest(
+			TutanotaService.FileBlobService,
+			HttpMethod.GET,
+			this._getFileRequestData(file),
+			FileBlobServiceGetOutTypeRef
+		)
+
+		const accessInfos = serviceReturn.accessInfos
+		const orderedBlobInfos: Array<{blobId: BlobId, accessInfo: BlobAccessInfo}> = serviceReturn.blobs.map(blobId => {
+				const accessInfo = assertNotNull(
+					accessInfos.find(info => info.blobs.find(b => arrayEquals(b.blobId, blobId.blobId))),
+					"Missing accessInfo for blob"
+				)
+				return {blobId, accessInfo}
+			}
+		)
+
+		return promiseMap(orderedBlobInfos, ({blobId, accessInfo}) => {
+			return this._downloadRawBlob(accessInfo.storageAccessToken, accessInfo.archiveId, blobId, accessInfo.servers, downloader)
+		},)
 	}
 
 	/**
@@ -293,11 +315,10 @@ export class FileFacade {
 	}
 
 
-	_getFileRequestData(file: TutanotaFile): FileDataDataGet {
-		let requestData = createFileDataDataGet()
-		requestData.file = file._id
-		requestData.base64 = false
-		return requestData
+	_getFileRequestData(file: TutanotaFile): FileBlobServiceGetIn {
+		return createFileBlobServiceGetIn({
+			file: file._id
+		})
 	}
 
 	async _downloadRawBlob<T>(storageAccessToken: string, archiveId: Id, blobId: BlobId, servers: Array<TargetServer>, blobDownloader: BlobDownloader<T>): Promise<T> {

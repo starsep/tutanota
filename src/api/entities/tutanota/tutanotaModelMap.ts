@@ -123,6 +123,8 @@ const map = {
     TemplateGroupRoot: () => import('./TemplateGroupRoot.js'),
     UserAreaGroupDeleteData: () => import('./UserAreaGroupDeleteData.js'),
     MailboxProperties: () => import('./MailboxProperties.js'),
-    SpamResults: () => import('./SpamResults.js')
+    SpamResults: () => import('./SpamResults.js'),
+    FileBlobServiceGetOut: () => import('./FileBlobServiceGetOut.js'),
+    FileBlobServiceGetIn: () => import('./FileBlobServiceGetIn.js')
 }
 export default map
