@@ -108,7 +108,7 @@ export class FileFacade {
 	 */
 	async downloadBlob(archiveId: Id, blobId: BlobId, key: Uint8Array): Promise<Uint8Array> {
 		const {storageAccessToken, servers} = await this._getDownloadToken(archiveId)
-		const data = await this._downloadRawBlob(storageAccessToken, archiveId, blobId, servers, this._blobDownloaderWeb.bind(this))
+		const data: Uint8Array = await this._downloadRawBlob(storageAccessToken, archiveId, blobId, servers, this._blobDownloaderWeb.bind(this))
 		return aes128Decrypt(uint8ArrayToKey(key), data)
 	}
 

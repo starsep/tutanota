@@ -157,11 +157,6 @@ export class MailFacade {
 		const mailGroupKey = this._login.getGroupKey(senderMailGroupId)
 
 		const sk = aes128RandomKey()
-		const service = createDraftCreateData()
-		service.previousMessageId = previousMessageId
-		service.conversationType = conversationType
-		service.ownerEncSessionKey = encryptKey(mailGroupKey, sk)
-		service.symEncSessionKey = encryptKey(userGroupKey, sk) // legacy
 
 		const draftCreateData = createDraftCreateData({
 			previousMessageId,
@@ -170,7 +165,7 @@ export class MailFacade {
 			symEncSessionKey: encryptKey(userGroupKey, sk) //legacy
 		})
 
-		service.draftData = createDraftData({
+		draftCreateData.draftData = createDraftData({
 			subject,
 			bodyText,
 			senderMailAddress,
