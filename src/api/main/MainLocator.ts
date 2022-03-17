@@ -57,6 +57,7 @@ import {IServiceExecutor} from "../common/ServiceRequest.js"
 import {BlobFacade} from "../worker/facades/BlobFacade"
 import {CryptoFacade} from "../worker/crypto/CryptoFacade"
 import type {InterWindowEventBus} from "../../native/common/InterWindowEventBus"
+import {RecipientsModel} from "./RecipientsModel"
 
 assertMainOrNode()
 
@@ -102,7 +103,7 @@ export interface IMainLocator {
 	readonly serviceExecutor: IServiceExecutor
 	readonly cryptoFacade: CryptoFacade
 	readonly interWindowEventBus: InterWindowEventBus
-
+	readonly recipientsModel: RecipientsModel
 	readonly init: () => Promise<void>
 	readonly initialized: Promise<void>
 }
@@ -144,6 +145,7 @@ class MainLocator implements IMainLocator {
 	serviceExecutor!: IServiceExecutor
 	cryptoFacade!: CryptoFacade
 	_interWindowEventBus!: InterWindowEventBus
+	recipientsModel!: RecipientsModel
 
 	private _nativeInterfaces: NativeInterfaces | null = null
 
@@ -316,6 +318,7 @@ class MainLocator implements IMainLocator {
 		this.contactModel = new ContactModelImpl(this.searchFacade, this.entityClient, logins)
 		this.minimizedMailModel = new MinimizedMailEditorViewModel()
 		this.usageTestController = new UsageTestController(this.usageTestModel)
+		this.recipientsModel = new RecipientsModel(this.contactModel, logins, this.mailFacade, this.entityClient)
 	}
 }
 
