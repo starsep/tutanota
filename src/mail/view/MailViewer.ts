@@ -753,6 +753,7 @@ export class MailViewer implements Component<MailViewerAttrs> {
 					colors,
 					click: createDropdown({
 						lazyButtons: () => {
+							const startTime = new Date()
 							const moreButtons: Array<ButtonAttrs> = []
 
 							if (this.viewModel.isUnread()) {
