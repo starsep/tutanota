@@ -187,7 +187,7 @@ export function promptForFeedbackAndSend(e: Error): Promise<FeedbackContent | vo
 		const userMessageTextFieldAttrs: TextFieldAttrs = {
 			label: "yourMessage_label",
 			helpLabel: () => lang.get("feedbackOnErrorInfo_msg"),
-			value: stream(userMessage),
+			value: userMessage,
 			type: TextFieldType.Area,
 			oninput: value => (userMessage = value),
 		}

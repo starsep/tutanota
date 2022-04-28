@@ -749,7 +749,8 @@ export class Dialog implements ModalComponent {
 			const result: Stream<string> = stream(value)
 			const textFieldAttrs: TextFieldAttrs = {
 				label: labelIdOrLabelFunction,
-				value: result,
+				value: result(),
+				oninput: result,
 				helpLabel: () => (infoMsgId ? lang.getMaybeLazy(infoMsgId) : ""),
 			}
 			Dialog.showActionDialog({
@@ -785,7 +786,8 @@ export class Dialog implements ModalComponent {
 		const result: Stream<string> = stream(value)
 		const textFieldAttrs: TextFieldAttrs = {
 			label: labelIdOrLabelFunction,
-			value: result,
+			value: result(),
+			oninput: result,
 			helpLabel: () => (infoMsgId ? lang.getMaybeLazy(infoMsgId) : ""),
 		}
 		Dialog.showActionDialog({
@@ -826,7 +828,8 @@ export class Dialog implements ModalComponent {
 			const textFieldAttrs: TextFieldAttrs = {
 				label: labelIdOrLabelFunction,
 				helpLabel: () => (infoMsgId ? lang.get(infoMsgId) : ""),
-				value: result,
+				value: result(),
+				oninput: result,
 				type: TextFieldType.Area,
 			}
 			Dialog.showActionDialog({
@@ -868,7 +871,8 @@ export class Dialog implements ModalComponent {
 						m(DropDownSelectorN, {
 							label,
 							items,
-							selectedValue,
+							selectedValue: selectedValue(),
+							selectionChangedHandler: selectedValue,
 						}),
 				},
 				okAction: (dialog: Dialog) => {
@@ -918,7 +922,8 @@ export class Dialog implements ModalComponent {
 		const textFieldAttrs: TextFieldAttrs = {
 			label: "password_label",
 			helpLabel: errorMessage,
-			value: value,
+			value: value(),
+			oninput: value,
 			preventAutofill: true,
 			type: TextFieldType.Password,
 			keyHandler: (key: KeyPress) => {

@@ -83,7 +83,8 @@ export class ContactListView {
 				{
 					headerContent: m(DropDownSelectorN, {
 						label: "sortBy_label",
-						selectedValue: sortByFirstName,
+						selectedValue: sortByFirstName(),
+						selectionChangedHandler: sortByFirstName,
 						items: [
 							{
 								name: lang.get("firstName_placeholder"),
@@ -103,7 +104,7 @@ export class ContactListView {
 			)
 		}
 
-		let sortModeChangedListener: stream<unknown>
+		let sortModeChangedListener: stream<void>
 
 		this.oncreate = () => {
 			sortModeChangedListener = sortByFirstName.map(() => this.list.sort())

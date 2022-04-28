@@ -48,7 +48,7 @@ export class ExternalLoginView implements CurrentView {
 		this._errorMessageId = null
 		this._helpText = "emptyString_msg"
 		this._password = stream("")
-		this._savePassword = stream(false)
+		this._savePassword = stream<boolean>(false)
 		this._symKeyForPasswordTransmission = null
 		this._credentialsProvider = locator.credentialsProvider
 
@@ -70,7 +70,8 @@ export class ExternalLoginView implements CurrentView {
 					type: TextFieldType.Password,
 					label: "password_label",
 					helpLabel: () => lang.get("enterPresharedPassword_msg"),
-					value: this._password,
+					value: this._password(),
+					oninput: this._password,
 				}),
 				m(CheckboxN, {
 					label: () => lang.get("storePassword_action"),

@@ -39,8 +39,7 @@ import {UserError} from "../../api/main/UserError"
 import {showProgressDialog} from "../../gui/dialogs/ProgressDialog"
 import {htmlSanitizer} from "../../misc/HtmlSanitizer"
 import {DropDownSelectorN} from "../../gui/base/DropDownSelectorN"
-import type {Mail} from "../../api/entities/tutanota/TypeRefs.js"
-import type {File as TutanotaFile} from "../../api/entities/tutanota/TypeRefs.js"
+import type {File as TutanotaFile, Mail} from "../../api/entities/tutanota/TypeRefs.js"
 import type {InlineImages} from "../view/MailViewer"
 import {FileOpenError} from "../../api/common/error/FileOpenError"
 import type {lazy} from "@tutao/tutanota-utils"
@@ -88,8 +87,8 @@ export function createMailEditorAttrs(
 	return {
 		model,
 		doBlockExternalContent: stream(doBlockExternalContent),
-		doShowToolbar: stream(false),
-		areDetailsExpanded: stream(false),
+		doShowToolbar: stream<boolean>(false),
+		areDetailsExpanded: stream<boolean>(false),
 		selectedNotificationLanguage: stream(""),
 		dialog,
 		templateModel,
@@ -330,7 +329,7 @@ export class MailEditor implements Component<MailEditorAttrs> {
 		const subjectFieldAttrs: TextFieldAttrs = {
 			label: "subject_label",
 			helpLabel: () => getConfidentialStateMessage(model.isConfidential()),
-			value: stream(model.getSubject()),
+			value: model.getSubject(),
 			oninput: val => model.setSubject(val),
 			injectionsRight: () => {
 				return [
@@ -367,23 +366,6 @@ export class MailEditor implements Component<MailEditorAttrs> {
 					),
 				)
 
-		const selectedNotificationLanguage = stream(model.getSelectedNotificationLanguageCode())
-
-		const lazyLanguageDropDownAttrs = () => {
-			return {
-				label: "notificationMailLanguage_label",
-				items: model.getAvailableNotificationTemplateLanguages().map(language => {
-					return {
-						name: lang.get(language.textId),
-						value: language.code,
-					}
-				}),
-				selectedValue: selectedNotificationLanguage,
-				selectionChangedHandler: (v: string) => model.setSelectedNotificationLanguageCode(v),
-				dropdownWidth: 250,
-			} as const
-		}
-
 		let editCustomNotificationMailAttrs: ButtonAttrs | null = null
 
 		if (logins.getUserController().isGlobalAdmin()) {
@@ -408,7 +390,7 @@ export class MailEditor implements Component<MailEditorAttrs> {
 							label: "edit_action",
 							click: () => {
 								import("../../settings/EditNotificationEmailDialog").then(({showAddOrEditNotificationEmailDialog}) =>
-									showAddOrEditNotificationEmailDialog(logins.getUserController(), selectedNotificationLanguage),
+									showAddOrEditNotificationEmailDialog(logins.getUserController(), model.getSelectedNotificationLanguageCode()),
 								)
 							},
 							type: ButtonType.Dropdown,
@@ -476,10 +458,10 @@ export class MailEditor implements Component<MailEditorAttrs> {
 									name: mailAddress,
 									value: mailAddress,
 								})),
-							selectedValue: stream(a.model.getSender()),
+							selectedValue: a.model.getSender(),
 							selectionChangedHandler: (selection: string) => model.setSender(selection),
 							dropdownWidth: 250,
-						} as const),
+						}),
 					),
 					isConfidential
 						? m(
@@ -502,7 +484,18 @@ export class MailEditor implements Component<MailEditorAttrs> {
 								},
 							},
 							[
-								m(".flex-grow", m(DropDownSelectorN, lazyLanguageDropDownAttrs())),
+								m(".flex-grow", m(DropDownSelectorN, {
+									label: "notificationMailLanguage_label",
+									items: model.getAvailableNotificationTemplateLanguages().map(language => {
+										return {
+											name: lang.get(language.textId),
+											value: language.code,
+										}
+									}),
+									selectedValue: model.getSelectedNotificationLanguageCode(),
+									selectionChangedHandler: (v: string) => model.setSelectedNotificationLanguageCode(v),
+									dropdownWidth: 250,
+								})),
 								editCustomNotificationMailAttrs
 									? m(".flex-no-grow.col.flex-end.border-bottom", m(".mr-negative-s", m(ButtonN, editCustomNotificationMailAttrs)))
 									: null,

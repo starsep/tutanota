@@ -9,21 +9,14 @@ import {
 	ShareCapability,
 	TimeFormat,
 } from "../../api/common/TutanotaConstants"
-import {createCalendarEventAttendee} from "../../api/entities/tutanota/TypeRefs.js"
-import type {CalendarEvent} from "../../api/entities/tutanota/TypeRefs.js"
-import {createCalendarEvent} from "../../api/entities/tutanota/TypeRefs.js"
-import type {AlarmInfo} from "../../api/entities/sys/TypeRefs.js"
+import type {CalendarEvent, CalendarRepeatRule, Contact, EncryptedMailAddress, Mail} from "../../api/entities/tutanota/TypeRefs.js"
+import {createCalendarEvent, createCalendarEventAttendee, createEncryptedMailAddress} from "../../api/entities/tutanota/TypeRefs.js"
+import type {AlarmInfo, RepeatRule} from "../../api/entities/sys/TypeRefs.js"
 import {createAlarmInfo} from "../../api/entities/sys/TypeRefs.js"
 import type {MailboxDetail} from "../../mail/model/MailModel"
 import stream from "mithril/stream"
 import Stream from "mithril/stream"
-import {
-	copyMailAddress,
-	getDefaultSenderFromUser,
-	getEnabledMailAddressesWithUser,
-	getSenderNameForUser,
-	RecipientField
-} from "../../mail/model/MailUtils"
+import {copyMailAddress, getDefaultSenderFromUser, getEnabledMailAddressesWithUser, getSenderNameForUser, RecipientField} from "../../mail/model/MailUtils"
 import {
 	createRepeatRuleWithValues,
 	generateUid,
@@ -58,18 +51,13 @@ import {generateEventElementId, isAllDayEvent} from "../../api/common/utils/Comm
 import type {CalendarInfo} from "../model/CalendarModel"
 import {CalendarModel} from "../model/CalendarModel"
 import {DateTime} from "luxon"
-import type {EncryptedMailAddress} from "../../api/entities/tutanota/TypeRefs.js"
-import {createEncryptedMailAddress} from "../../api/entities/tutanota/TypeRefs.js"
 import {NotFoundError, PayloadTooLargeError, TooManyRequestsError} from "../../api/common/error/RestError"
 import type {CalendarUpdateDistributor} from "./CalendarUpdateDistributor"
 import {calendarUpdateDistributor} from "./CalendarUpdateDistributor"
 import type {IUserController} from "../../api/main/UserController"
 import {isExternal, RecipientInfo, RecipientInfoType} from "../../api/common/RecipientInfo"
-import type {Contact} from "../../api/entities/tutanota/TypeRefs.js"
 import type {SendMailModel} from "../../mail/editor/SendMailModel"
-import type {RepeatRule} from "../../api/entities/sys/TypeRefs.js"
 import {UserError} from "../../api/main/UserError"
-import type {Mail} from "../../api/entities/tutanota/TypeRefs.js"
 import {logins} from "../../api/main/LoginController"
 import {locator} from "../../api/main/MainLocator"
 import {EntityClient} from "../../api/common/EntityClient"
@@ -77,7 +65,6 @@ import {BusinessFeatureRequiredError} from "../../api/main/BusinessFeatureRequir
 import {hasCapabilityOnGroup} from "../../sharing/GroupUtils"
 import {Time} from "../../api/common/utils/Time"
 import {hasError} from "../../api/common/utils/ErrorCheckUtils"
-import type {CalendarRepeatRule} from "../../api/entities/tutanota/TypeRefs.js"
 
 const TIMESTAMP_ZERO_YEAR = 1970
 // whether to close dialog
@@ -185,15 +172,15 @@ export class CalendarEventViewModel {
 		this._sendModelFactory = () => sendMailModelFactory(mailboxDetail, "response")
 
 		this._ownMailAddresses = getEnabledMailAddressesWithUser(mailboxDetail, userController.userGroupInfo)
-		this._ownAttendee = stream(null)
-		this.sendingOutUpdate = stream(false)
+		this._ownAttendee = stream<EncryptedMailAddress | null>(null)
+		this.sendingOutUpdate = stream<boolean>(false)
 		this._processing = false
-		this.hasBusinessFeature = stream(false)
-		this.hasPremiumLegacy = stream(false)
-		this.isForceUpdates = stream(false)
+		this.hasBusinessFeature = stream<boolean>(false)
+		this.hasPremiumLegacy = stream<boolean>(false)
+		this.isForceUpdates = stream<boolean>(false)
 		this.location = stream("")
 		this.note = ""
-		this.allDay = stream(false)
+		this.allDay = stream<boolean>(false)
 		this.amPmFormat = userController.userSettingsGroupRoot.timeFormat === TimeFormat.TWELVE_HOURS
 		this.existingEvent = existingEvent ?? null
 		this._zone = zone
@@ -212,7 +199,7 @@ export class CalendarEventViewModel {
 			: addressToMailAddress(getDefaultSenderFromUser(userController), mailboxDetail, userController)
 		this.alarms = []
 		this.calendars = calendars
-		this.selectedCalendar = stream(this.getAvailableCalendars()[0])
+		this.selectedCalendar = stream<CalendarInfo | null>(this.getAvailableCalendars()[0] ?? null)
 		this.initialized = Promise.resolve().then(async () => {
 			if (existingEvent) {
 				if (existingEvent.invitedConfidentially != null) {
@@ -386,7 +373,7 @@ export class CalendarEventViewModel {
 						 })
 		}
 
-		return stream(newStatuses)
+		return stream<ReadonlyMap<string, CalendarAttendeeStatus>>(newStatuses)
 	}
 
 	async updateCustomerFeatures(): Promise<void> {
@@ -400,8 +387,8 @@ export class CalendarEventViewModel {
 		}
 	}
 
-	_initAttendees(): Stream<Array<Guest>> {
-		return stream.merge([this._inviteModel.onMailChanged, this._updateModel.onMailChanged, this._guestStatuses, this._ownAttendee]).map(() => {
+	_initAttendees(): Stream<ReadonlyArray<Guest>> {
+		return stream.merge([this._inviteModel.onMailChanged, this._updateModel.onMailChanged, this._guestStatuses, this._ownAttendee] as Stream<unknown>[]).map(() => {
 			const makeGuestList = (model: SendMailModel) => {
 				return model.bccRecipients().map(recipientInfo => {
 					const guest = {
@@ -428,7 +415,7 @@ export class CalendarEventViewModel {
 				})
 			}
 
-			return guests
+			return guests as ReadonlyArray<Guest>
 		})
 	}
 
