@@ -4,10 +4,10 @@ import {DefaultAnimationTime} from "../animation/Animations"
 import {theme} from "../theme"
 import type {TranslationKey} from "../../misc/LanguageViewModel"
 import {lang} from "../../misc/LanguageViewModel"
+import type {lazy} from "@tutao/tutanota-utils"
 import {repeat} from "@tutao/tutanota-utils"
 import type {keyHandler} from "../../misc/KeyManager"
 import {TabIndex} from "../../api/common/TutanotaConstants"
-import type {lazy} from "@tutao/tutanota-utils"
 import type {clickHandler} from "./GuiUtils"
 import Stream from "mithril/stream";
 
@@ -23,6 +23,7 @@ export type TextFieldAttrs = {
 	// only used by the BubbleTextField (-> uses old TextField) to display bubbles and out of office notification
 	injectionsRight?: lazy<Children>
 	keyHandler?: keyHandler
+	onDomInputCreated?: (dom: HTMLInputElement) => void,
 	// interceptor used by the BubbleTextField to react on certain keys
 	onfocus?: (dom: HTMLElement, input: HTMLInputElement) => unknown
 	onblur?: (...args: Array<any>) => any
@@ -101,7 +102,7 @@ export class TextFieldN implements Component<TextFieldAttrs> {
 				m(".flex.flex-column", [
 					// another wrapper to fix IE 11 min-height bug https://github.com/philipwalton/flexbugs#3-min-height-on-a-flex-container-wont-apply-to-its-flex-items
 					m(
-						".flex.items-end",
+						".flex.items-end.flex-wrap",
 						{
 							// .flex-wrap
 							style: {
@@ -199,6 +200,7 @@ export class TextFieldN implements Component<TextFieldAttrs> {
 						"aria-label": lang.getMaybeLazy(a.label),
 						oncreate: vnode => {
 							this.domInput = vnode.dom as HTMLInputElement
+							vnode.attrs.onDomInputCreated?.(this.domInput)
 							this.domInput.style.opacity = this._shouldShowPasswordOverlay(a) ? "0" : "1"
 							this.domInput.value = a.value()
 

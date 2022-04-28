@@ -25,6 +25,7 @@ import {
 	ReportedMailFieldType,
 } from "../../common/TutanotaConstants"
 import type {
+	Contact,
 	DraftAttachment,
 	DraftRecipient,
 	EncryptedMailAddress,
@@ -41,8 +42,8 @@ import {
 	createDeleteMailFolderData,
 	createDraftAttachment,
 	createDraftCreateData,
-	createDraftData,
-	createDraftUpdateData,
+	createDraftData, createDraftRecipient,
+	createDraftUpdateData, createEncryptedMailAddress,
 	createExternalUserData,
 	createListUnsubscribeData,
 	createMoveMailData,
@@ -54,7 +55,6 @@ import {
 	MailTypeRef,
 	TutanotaPropertiesTypeRef
 } from "../../entities/tutanota/TypeRefs.js"
-import type {RecipientDetails} from "../../common/RecipientInfo"
 import {RecipientsNotFoundError} from "../../common/error/RecipientsNotFoundError"
 import {NotFoundError} from "../../common/error/RestError"
 import type {EntityUpdate, PublicKeyReturn, User} from "../../entities/sys/TypeRefs.js"
@@ -85,11 +85,6 @@ import {
 import {BlobFacade} from "./BlobFacade"
 import {FileFacade} from "./FileFacade"
 import {assertWorkerOrNode, isApp} from "../../common/Env"
-import {TutanotaPropertiesTypeRef} from "../../entities/tutanota/TutanotaProperties"
-import {GroupInfoTypeRef} from "../../entities/sys/GroupInfo"
-import {createEncryptedMailAddress, EncryptedMailAddress} from "../../entities/tutanota/EncryptedMailAddress"
-import type {EntityUpdate} from "../../entities/sys/EntityUpdate"
-import type {PhishingMarker} from "../../entities/tutanota/PhishingMarker"
 import {EntityClient} from "../../common/EntityClient"
 import {getEnabledMailAddressesForGroupInfo, getUserGroupMemberships} from "../../common/utils/GroupUtils"
 import {containsId, getLetId, isSameId, stringToCustomId} from "../../common/utils/EntityUtils"
@@ -115,10 +110,8 @@ import {FileReference} from "../../common/utils/FileUtils";
 import {CounterService} from "../../entities/monitor/Services"
 import {PublicKeyService} from "../../entities/sys/Services.js"
 import {IServiceExecutor} from "../../common/ServiceRequest"
-import {resolveTypeReference} from "../../common/EntityFunctions"
 import {createWriteCounterData} from "../../entities/monitor/TypeRefs"
 import {PartialRecipient, Recipient, RecipientList, RecipientType} from "../../common/recipients/Recipient"
-import {Contact} from "../../entities/tutanota/Contact"
 
 assertWorkerOrNode()
 type Attachments = ReadonlyArray<TutanotaFile | DataFile | FileReference>

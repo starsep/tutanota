@@ -514,6 +514,10 @@ export const Keys = Object.freeze({
 		code: 13,
 		name: "⏎",
 	},
+	BACKSPACE: {
+		code: 8,
+		name: "BACKSPACE"
+	},
 	TAB: {
 		code: 9,
 		name: "↹",

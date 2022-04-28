@@ -1,4 +1,3 @@
-import {Contact, ContactTypeRef} from "../entities/tutanota/Contact.js";
 import type {ContactModel} from "../../contacts/model/ContactModel.js";
 import type {LoginController} from "./LoginController.js";
 import type {MailFacade} from "../worker/facades/MailFacade.js";
@@ -7,17 +6,25 @@ import {createNewContact, isTutanotaMailAddress} from "../../mail/model/MailUtil
 import {getContactDisplayName} from "../../contacts/model/ContactUtils.js";
 import {PartialRecipient, Recipient, RecipientType} from "../common/recipients/Recipient.js";
 import {LazyLoaded} from "@tutao/tutanota-utils"
+import {Contact, ContactTypeRef} from "../entities/tutanota/TypeRefs"
 
 /**
  * A recipient that can be resolved to obtain contact and recipient type
  */
 export interface ResolvableRecipient extends Recipient {
+	/** get the resolved value of the recipient, when it's ready */
 	resolved(): Promise<Recipient>
 
+	/** check if resolution is complete */
 	isResolved(): boolean
 
+	/** provide a handler to run when resolution is done, handy for chaining */
+	whenResolved(onResolved: (resolvedRecipient: Recipient) => void): this
+
+	/** update the contact. will override whatever contact gets resolved */
 	setContact(contact: Contact): void
 
+	/** update the name. will override whatever the name has resolved to */
 	setName(name: string): void
 }
 
@@ -116,6 +123,11 @@ class ResolvableRecipientImpl implements ResolvableRecipient {
 	isResolved(): boolean {
 		// We are only resolved when both type and contact are non-null and finished
 		return this._type.isLoaded() && this._contact.isLoaded()
+	}
+
+	whenResolved(handler: (resolvedRecipient: Recipient) => void): this {
+		this.resolved().then(handler)
+		return this
 	}
 
 	/**

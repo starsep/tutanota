@@ -1,13 +1,4 @@
-import {
-	ApprovalStatus,
-	ConversationType,
-	FeatureType,
-	MailFolderType,
-	MailMethod,
-	MAX_ATTACHMENT_SIZE,
-	OperationType,
-	ReplyType
-} from "../../api/common/TutanotaConstants"
+import {ApprovalStatus, ConversationType, MailFolderType, MailMethod, MAX_ATTACHMENT_SIZE, OperationType, ReplyType} from "../../api/common/TutanotaConstants"
 import {
 	AccessBlockedError,
 	LockedError,
@@ -28,17 +19,11 @@ import {
 	getTemplateLanguages,
 	RecipientField,
 } from "../model/MailUtils"
-import type {File as TutanotaFile} from "../../api/entities/tutanota/TypeRefs.js"
-import {FileTypeRef} from "../../api/entities/tutanota/TypeRefs.js"
-import {ConversationEntryTypeRef} from "../../api/entities/tutanota/TypeRefs.js"
-import type {Mail} from "../../api/entities/tutanota/TypeRefs.js"
-import {MailTypeRef} from "../../api/entities/tutanota/TypeRefs.js"
-import type {Contact} from "../../api/entities/tutanota/TypeRefs.js"
-import {ContactTypeRef} from "../../api/entities/tutanota/TypeRefs.js"
+import type {File as TutanotaFile, Mail} from "../../api/entities/tutanota/TypeRefs.js"
+import {ContactTypeRef, ConversationEntryTypeRef, FileTypeRef, MailTypeRef} from "../../api/entities/tutanota/TypeRefs.js"
 import {FileNotFoundError} from "../../api/common/error/FileNotFoundError"
 import type {LoginController} from "../../api/main/LoginController"
 import {logins} from "../../api/main/LoginController"
-import type {MailAddress} from "../../api/entities/tutanota/TypeRefs.js"
 import type {MailboxDetail, MailModel} from "../model/MailModel"
 import {RecipientNotResolvedError} from "../../api/common/error/RecipientNotResolvedError"
 import stream from "mithril/stream"
@@ -46,9 +31,6 @@ import Stream from "mithril/stream"
 import type {EntityUpdateData} from "../../api/main/EventController"
 import {EventController, isUpdateForTypeRef} from "../../api/main/EventController"
 import {isMailAddress} from "../../misc/FormatValidator"
-import {createApprovalMail} from "../../api/entities/monitor/TypeRefs.js"
-import type {EncryptedMailAddress} from "../../api/entities/tutanota/TypeRefs.js"
-import {createApprovalMail} from "../../api/entities/monitor/ApprovalMail"
 import type {ContactModel} from "../../contacts/model/ContactModel"
 import type {Language, TranslationKey, TranslationText} from "../../misc/LanguageViewModel"
 import {getAvailableLanguageCode, getSubstitutedLanguageCode, lang, languages} from "../../misc/LanguageViewModel"
@@ -69,6 +51,7 @@ import {DataFile} from "../../api/common/DataFile";
 import {FileReference} from "../../api/common/utils/FileUtils"
 import {PartialRecipient, Recipient, RecipientList, Recipients, RecipientType} from "../../api/common/recipients/Recipient"
 import {RecipientsModel, ResolvableRecipient} from "../../api/main/RecipientsModel"
+import {createApprovalMail} from "../../api/entities/monitor/TypeRefs"
 
 assertMainOrNode()
 export const TOO_MANY_VISIBLE_RECIPIENTS = 10
@@ -498,6 +481,13 @@ export class SendMailModel {
 
 	getRecipient(type: RecipientField, address: string): ResolvableRecipient | null {
 		return this.getRecipientList(type).find(recipient => recipient.address === address) ?? null
+	}
+
+	removeRecipientByAddress(address: string, type: RecipientField, notify: boolean = true) {
+		const recipient = this.getRecipientList(type).find(recipient => recipient.address === address)
+		if (recipient) {
+			this.removeRecipient(recipient, type, notify)
+		}
 	}
 
 	removeRecipient(recipient: Recipient, type: RecipientField, notify: boolean = true): boolean {

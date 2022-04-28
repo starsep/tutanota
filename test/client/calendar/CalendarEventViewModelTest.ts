@@ -8,21 +8,21 @@ import {assertThrows, unmockAttribute} from "@tutao/tutanota-test-utils"
 import {clone, delay, downcast, neverNull, noOp} from "@tutao/tutanota-utils"
 import type {MailboxDetail} from "../../../src/mail/model/MailModel"
 import {MailModel} from "../../../src/mail/model/MailModel"
-import type {CalendarEvent} from "../../../src/api/entities/tutanota/TypeRefs.js"
-import {createCalendarEvent} from "../../../src/api/entities/tutanota/TypeRefs.js"
+import type {CalendarEvent, Mail} from "../../../src/api/entities/tutanota/TypeRefs.js"
 import {
-	AccountType,
-	AlarmInterval,
-	assertEnumValue,
-	CalendarAttendeeStatus,
-	ShareCapability,
-} from "../../../src/api/common/TutanotaConstants"
-import {createGroupMembership} from "../../../src/api/entities/sys/TypeRefs.js"
+	createCalendarEvent,
+	createCalendarEventAttendee,
+	createContact,
+	createContactMailAddress,
+	createEncryptedMailAddress,
+	createMail,
+	EncryptedMailAddress
+} from "../../../src/api/entities/tutanota/TypeRefs.js"
+import {AccountType, AlarmInterval, assertEnumValue, CalendarAttendeeStatus, ShareCapability,} from "../../../src/api/common/TutanotaConstants"
 import type {User} from "../../../src/api/entities/sys/TypeRefs.js"
-import {createCalendarEventAttendee} from "../../../src/api/entities/tutanota/TypeRefs.js"
+import {createGroupMembership, createPublicKeyReturn, createRepeatRule} from "../../../src/api/entities/sys/TypeRefs.js"
 import type {CalendarUpdateDistributor} from "../../../src/calendar/date/CalendarUpdateDistributor"
 import type {IUserController} from "../../../src/api/main/UserController"
-import {createEncryptedMailAddress, EncryptedMailAddress} from "../../../src/api/entities/tutanota/TypeRefs.js"
 import type {CalendarInfo} from "../../../src/calendar/model/CalendarModel"
 import {CalendarModel} from "../../../src/calendar/model/CalendarModel"
 import {getAllDayDateUTCFromZone, getTimeZone} from "../../../src/calendar/date/CalendarUtils"
@@ -31,12 +31,7 @@ import {SendMailModel} from "../../../src/mail/editor/SendMailModel"
 import type {LoginController} from "../../../src/api/main/LoginController"
 import type {ContactModel} from "../../../src/contacts/model/ContactModel"
 import {EventController} from "../../../src/api/main/EventController"
-import type {Mail} from "../../../src/api/entities/tutanota/TypeRefs.js"
-import {createMail} from "../../../src/api/entities/tutanota/TypeRefs.js"
-import {createContact} from "../../../src/api/entities/tutanota/TypeRefs.js"
 import {EntityClient} from "../../../src/api/common/EntityClient"
-import {createPublicKeyReturn} from "../../../src/api/entities/sys/TypeRefs.js"
-import {createContactMailAddress} from "../../../src/api/entities/tutanota/TypeRefs.js"
 import {BusinessFeatureRequiredError} from "../../../src/api/main/BusinessFeatureRequiredError"
 import {MailFacade} from "../../../src/api/worker/facades/MailFacade"
 import {EntityRestClientMock} from "../../api/worker/EntityRestClientMock"
@@ -52,8 +47,9 @@ import {
 	makeMailboxDetail,
 	makeUserController,
 } from "./CalendarTestUtils"
-import {createRepeatRule} from "../../../src/api/entities/sys/TypeRefs.js"
-import {RecipientType} from "../../../src/api/common/recipients/RecipientsModel.js";
+import {RecipientType} from "../../../src/api/common/recipients/Recipient.js"
+import {RecipientsModel} from "../../../src/api/main/RecipientsModel"
+import {instance, matchers, when} from "testdouble"
 
 const now = new Date(2020, 4, 25, 13, 40)
 const zone = getTimeZone()
@@ -77,6 +73,9 @@ o.spec("CalendarEventViewModel", function () {
 	let responseModel: SendMailModel
 	let showProgress = noOp
 
+
+	let recipientsModelMock: RecipientsModel
+
 	async function init({
 							userController = makeUserController(),
 							distributor = makeDistributor(),
@@ -98,6 +97,9 @@ o.spec("CalendarEventViewModel", function () {
 		existingEvent: CalendarEvent | null
 		mail?: Mail | null | undefined
 	}): Promise<CalendarEventViewModel> {
+		recipientsModelMock = instance(RecipientsModel)
+		when(recipientsModelMock.resolve(matchers.anything())).thenDo(({address, name, type}) => ({address, name: name ?? "", type}))
+
 		const loginController: LoginController = downcast({
 			getUserController: () => userController,
 			isInternalUserLoggedIn: () => true,
@@ -122,39 +124,43 @@ o.spec("CalendarEventViewModel", function () {
 		})
 		inviteModel = new SendMailModel(
 			mailFacadeMock,
+			entityClient,
 			loginController,
 			neverNull(mailModel),
 			contactModel,
 			eventController,
-			entityClient,
 			mailboxDetail,
+			recipientsModelMock,
 		)
 		updateModel = new SendMailModel(
 			mailFacadeMock,
+			entityClient,
 			loginController,
 			neverNull(mailModel),
 			contactModel,
 			eventController,
-			entityClient,
 			mailboxDetail,
+			recipientsModelMock,
 		)
 		cancelModel = new SendMailModel(
 			mailFacadeMock,
+			entityClient,
 			loginController,
 			neverNull(mailModel),
 			contactModel,
 			eventController,
-			entityClient,
 			mailboxDetail,
+			recipientsModelMock,
 		)
 		responseModel = new SendMailModel(
 			mailFacadeMock,
+			entityClient,
 			loginController,
 			neverNull(mailModel),
 			contactModel,
 			eventController,
-			entityClient,
 			mailboxDetail,
+			recipientsModelMock,
 		)
 
 		const sendFactory = (_, purpose) => {
