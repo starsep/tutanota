@@ -199,7 +199,7 @@ export function promptForFeedbackAndSend(e: Error): Promise<FeedbackContent | vo
 			dialog.close()
 		}
 
-		const ignoreChecked = stream<boolean>()
+		let ignoreChecked = false
 		notificationOverlay.show(
 			{
 				view: () =>
@@ -208,6 +208,7 @@ export function promptForFeedbackAndSend(e: Error): Promise<FeedbackContent | vo
 						m(CheckboxN, {
 							label: () => "Ignore the error for this session",
 							checked: ignoreChecked,
+							onChecked: (v) => ignoreChecked = v,
 						}),
 					]),
 			},
@@ -232,7 +233,7 @@ export function promptForFeedbackAndSend(e: Error): Promise<FeedbackContent | vo
 		)
 
 		function addToIgnored() {
-			if (ignoreChecked()) {
+			if (ignoreChecked) {
 				ignoredMessages.push(e.message)
 			}
 		}
