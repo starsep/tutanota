@@ -1,11 +1,10 @@
 import m, {Children} from "mithril"
 import {assertMainOrNode, isApp} from "../api/common/Env"
 import {lang} from "../misc/LanguageViewModel"
-import type {TutanotaProperties} from "../api/entities/tutanota/TypeRefs.js"
-import {TutanotaPropertiesTypeRef} from "../api/entities/tutanota/TypeRefs.js"
+import type {MailboxProperties, OutOfOfficeNotification, TutanotaProperties} from "../api/entities/tutanota/TypeRefs.js"
+import {MailboxPropertiesTypeRef, MailFolderTypeRef, OutOfOfficeNotificationTypeRef, TutanotaPropertiesTypeRef} from "../api/entities/tutanota/TypeRefs.js"
 import {FeatureType, InboxRuleType, OperationType, ReportMovedMailsType} from "../api/common/TutanotaConstants"
 import {LazyLoaded, neverNull, noOp, ofClass} from "@tutao/tutanota-utils"
-import {MailFolderTypeRef} from "../api/entities/tutanota/TypeRefs.js"
 import {getInboxRuleTypeName} from "../mail/model/InboxRuleHandler"
 import type {EditAliasesFormAttrs} from "./EditAliasesFormN"
 import {createEditAliasFormAttrs, EditAliasesFormN, updateNbrOfAliases} from "./EditAliasesFormN"
@@ -38,13 +37,9 @@ import {LockedError} from "../api/common/error/RestError"
 import {getEnabledMailAddressesForGroupInfo} from "../api/common/utils/GroupUtils"
 import {isSameId} from "../api/common/utils/EntityUtils"
 import {showEditOutOfOfficeNotificationDialog} from "./EditOutOfOfficeNotificationDialog"
-import type {OutOfOfficeNotification} from "../api/entities/tutanota/TypeRefs.js"
-import {OutOfOfficeNotificationTypeRef} from "../api/entities/tutanota/TypeRefs.js"
 import {formatActivateState, loadOutOfOfficeNotification} from "../misc/OutOfOfficeNotificationUtils"
 import {getSignatureType, show as showEditSignatureDialog} from "./EditSignatureDialog"
 import type {UpdatableSettingsViewer} from "./SettingsView"
-import type {MailboxProperties} from "../api/entities/tutanota/TypeRefs.js"
-import {MailboxPropertiesTypeRef} from "../api/entities/tutanota/TypeRefs.js"
 import {getReportMovedMailsType, loadMailboxProperties, saveReportMovedMails} from "../misc/MailboxPropertiesUtils"
 
 assertMainOrNode()
@@ -275,7 +270,7 @@ export class MailSettingsViewer implements UpdatableSettingsViewer {
 					role: "group",
 					oncreate: () => {
 						this._indexStateWatch = locator.search.indexState.map(newValue => {
-							this._enableMailIndexing  = newValue.mailIndexEnabled
+							this._enableMailIndexing = newValue.mailIndexEnabled
 
 							m.redraw()
 						})
@@ -305,13 +300,12 @@ export class MailSettingsViewer implements UpdatableSettingsViewer {
 								m(".h4", lang.get("inboxRulesSettings_action")),
 								m(ExpanderButtonN, {
 									label: "showInboxRules_action",
-									expanded: this._inboxRulesExpanded,
+									expanded: this._inboxRulesExpanded(),
+									onExpandedChange: this._inboxRulesExpanded,
 								}),
 							]),
-							m(
-								ExpanderPanelN,
-								{
-									expanded: this._inboxRulesExpanded,
+							m(ExpanderPanelN, {
+									expanded: this._inboxRulesExpanded(),
 								},
 								m(TableN, inboxRulesTableAttrs),
 							),

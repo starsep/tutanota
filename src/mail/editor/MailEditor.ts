@@ -194,7 +194,8 @@ export class MailEditor implements Component<MailEditorAttrs> {
 					".mr-s",
 					m(ExpanderButtonN, {
 						label: "show_action",
-						expanded: a.areDetailsExpanded,
+						expanded: a.areDetailsExpanded(),
+						onExpandedChange: a.areDetailsExpanded,
 					}),
 				)
 		} else {
@@ -434,10 +435,8 @@ export class MailEditor implements Component<MailEditorAttrs> {
 				m(".rel", m(this.recipientFields.to.component)),
 				m(
 					".rel",
-					m(
-						ExpanderPanelN,
-						{
-							expanded: a.areDetailsExpanded,
+					m(ExpanderPanelN, {
+							expanded: a.areDetailsExpanded(),
 						},
 						m(".details", [m(this.recipientFields.cc.component), m(this.recipientFields.bcc.component)]),
 					),

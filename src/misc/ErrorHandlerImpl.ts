@@ -252,14 +252,13 @@ export function promptForFeedbackAndSend(e: Error): Promise<FeedbackContent | vo
 									".right",
 									m(ExpanderButtonN, {
 										label: "details_label",
-										expanded: detailsExpanded,
+										expanded: detailsExpanded(),
+										onExpandedChange: detailsExpanded,
 									}),
 								),
 							),
-							m(
-								ExpanderPanelN,
-								{
-									expanded: detailsExpanded,
+							m(ExpanderPanelN, {
+									expanded: detailsExpanded(),
 								},
 								m(".selectable", [
 									m(".selectable", preparedContent.subject),
@@ -396,16 +395,15 @@ function showErrorDialogNotLoggedIn(e: Error) {
 				m(
 					"div.mr-negative-xs",
 					m(ExpanderButtonN, {
-						expanded,
+						expanded: expanded(),
+						onExpandedChange: expanded,
 						label: "showMore_action",
 					}),
 				),
 			],
 		),
-		m(
-			ExpanderPanelN,
-			{
-				expanded,
+		m(ExpanderPanelN, {
+				expanded: expanded(),
 			},
 			[
 				m(
