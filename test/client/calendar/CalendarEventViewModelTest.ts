@@ -8,21 +8,21 @@ import {assertThrows, unmockAttribute} from "@tutao/tutanota-test-utils"
 import {clone, delay, downcast, neverNull, noOp} from "@tutao/tutanota-utils"
 import type {MailboxDetail} from "../../../src/mail/model/MailModel"
 import {MailModel} from "../../../src/mail/model/MailModel"
-import type {CalendarEvent} from "../../../src/api/entities/tutanota/TypeRefs.js"
-import {createCalendarEvent} from "../../../src/api/entities/tutanota/TypeRefs.js"
+import type {CalendarEvent, Mail} from "../../../src/api/entities/tutanota/TypeRefs.js"
 import {
-	AccountType,
-	AlarmInterval,
-	assertEnumValue,
-	CalendarAttendeeStatus,
-	ShareCapability,
-} from "../../../src/api/common/TutanotaConstants"
-import {createGroupMembership} from "../../../src/api/entities/sys/TypeRefs.js"
+	createCalendarEvent,
+	createCalendarEventAttendee,
+	createContact,
+	createContactMailAddress,
+	createEncryptedMailAddress,
+	createMail,
+	EncryptedMailAddress
+} from "../../../src/api/entities/tutanota/TypeRefs.js"
+import {AccountType, AlarmInterval, assertEnumValue, CalendarAttendeeStatus, ShareCapability,} from "../../../src/api/common/TutanotaConstants"
 import type {User} from "../../../src/api/entities/sys/TypeRefs.js"
-import {createCalendarEventAttendee} from "../../../src/api/entities/tutanota/TypeRefs.js"
+import {createGroupMembership, createPublicKeyReturn, createRepeatRule} from "../../../src/api/entities/sys/TypeRefs.js"
 import type {CalendarUpdateDistributor} from "../../../src/calendar/date/CalendarUpdateDistributor"
 import type {IUserController} from "../../../src/api/main/UserController"
-import {createEncryptedMailAddress, EncryptedMailAddress} from "../../../src/api/entities/tutanota/TypeRefs.js"
 import type {CalendarInfo} from "../../../src/calendar/model/CalendarModel"
 import {CalendarModel} from "../../../src/calendar/model/CalendarModel"
 import {getAllDayDateUTCFromZone, getTimeZone} from "../../../src/calendar/date/CalendarUtils"
@@ -32,12 +32,7 @@ import {SendMailModel} from "../../../src/mail/editor/SendMailModel"
 import type {LoginController} from "../../../src/api/main/LoginController"
 import type {ContactModel} from "../../../src/contacts/model/ContactModel"
 import {EventController} from "../../../src/api/main/EventController"
-import type {Mail} from "../../../src/api/entities/tutanota/TypeRefs.js"
-import {createMail} from "../../../src/api/entities/tutanota/TypeRefs.js"
-import {createContact} from "../../../src/api/entities/tutanota/TypeRefs.js"
 import {EntityClient} from "../../../src/api/common/EntityClient"
-import {createPublicKeyReturn} from "../../../src/api/entities/sys/TypeRefs.js"
-import {createContactMailAddress} from "../../../src/api/entities/tutanota/TypeRefs.js"
 import {BusinessFeatureRequiredError} from "../../../src/api/main/BusinessFeatureRequiredError"
 import {MailFacade} from "../../../src/api/worker/facades/MailFacade"
 import {EntityRestClientMock} from "../../api/worker/EntityRestClientMock"
@@ -53,7 +48,6 @@ import {
 	makeMailboxDetail,
 	makeUserController,
 } from "./CalendarTestUtils"
-import {createRepeatRule} from "../../../src/api/entities/sys/TypeRefs.js"
 
 const now = new Date(2020, 4, 25, 13, 40)
 const zone = getTimeZone()
@@ -370,6 +364,24 @@ o.spec("CalendarEventViewModel", function () {
 		o(viewModel.canModifyOrganizer()).equals(false)
 		o(viewModel.possibleOrganizers).deepEquals([neverNull(existingEvent.organizer)])
 	})
+	o("event created by another user we shared our calendar with", async function () {
+		const existingEvent = createCalendarEvent({
+			summary: "existing event",
+			startTime: new Date(2020, 4, 26, 12),
+			endTime: new Date(2020, 4, 26, 13),
+			organizer: wrapEncIntoMailAddress("another-user@provider.com"),
+			_ownerGroup: calendarGroupId,
+		})
+		const viewModel = await init({
+			calendars: makeCalendars("own"),
+			existingEvent,
+		})
+		o(viewModel.isReadOnlyEvent()).equals(false)
+		o(viewModel.canModifyGuests()).equals(true)
+		o(viewModel.canModifyOwnAttendance()).equals(true)
+		o(viewModel.canModifyOrganizer()).equals(true)
+		o(viewModel.possibleOrganizers).deepEquals([neverNull(encMailAddress)])("Organizer of the event is overwritten with our own address")
+	})
 	o("in writable calendar", async function () {
 		const calendars = makeCalendars("shared")
 		const userController = makeUserController()
@@ -378,7 +390,7 @@ o.spec("CalendarEventViewModel", function () {
 			summary: "existing event",
 			startTime: new Date(2020, 4, 26, 12),
 			endTime: new Date(2020, 4, 26, 13),
-			organizer: wrapEncIntoMailAddress("another-user@provider.com"),
+			organizer: encMailAddress,
 			_ownerGroup: calendarGroupId,
 		})
 		const viewModel = await init({
@@ -402,16 +414,22 @@ o.spec("CalendarEventViewModel", function () {
 			endTime: new Date(2020, 4, 26, 13),
 			organizer: wrapEncIntoMailAddress("another-user@provider.com"),
 			_ownerGroup: calendarGroupId,
+			attendees: [
+				createCalendarEventAttendee({
+					address: createEncryptedMailAddress({
+						address: "attendee@example.com",
+					}),
+				})],
 		})
 		const viewModel = await init({
 			calendars,
 			existingEvent,
 			userController,
 		})
-		o(viewModel.isReadOnlyEvent()).equals(false)
-		o(viewModel.canModifyGuests()).equals(false)
-		o(viewModel.canModifyOwnAttendance()).equals(false)
-		o(viewModel.canModifyOrganizer()).equals(false)
+		o(viewModel.isReadOnlyEvent()).equals(true)("Is readonly event")
+		o(viewModel.canModifyGuests()).equals(false)("Can modify guests")
+		o(viewModel.canModifyOwnAttendance()).equals(false)("Can modify own attendance")
+		o(viewModel.canModifyOrganizer()).equals(false)("Can modify organizer")
 		o(viewModel.possibleOrganizers).deepEquals([neverNull(existingEvent.organizer)])
 	})
 	o("in readonly calendar", async function () {
@@ -2617,14 +2635,25 @@ o.spec("CalendarEventViewModel", function () {
 		})
 		o("cannot modify when it's invite in own calendar", async function () {
 			const calendars = makeCalendars("own")
+
 			const viewModel = await init({
 				calendars,
 				existingEvent: createCalendarEvent({
-					_id: ["listId", "calendarId"],
+					summary: "existing event",
+					startTime: new Date(2020, 4, 26, 12),
+					endTime: new Date(2020, 4, 26, 13),
+					organizer: wrapEncIntoMailAddress("another-user@provider.com"),
 					_ownerGroup: calendarGroupId,
-					organizer: createEncryptedMailAddress({
-						address: "organizer@example.com",
-					}),
+					attendees: [
+						createCalendarEventAttendee({
+							address: createEncryptedMailAddress({
+								address: "attendee@example.com",
+							}),
+						}),
+						createCalendarEventAttendee({
+							address: encMailAddress,
+						}),
+					],
 				}),
 			})
 			o(viewModel.canModifyOrganizer()).equals(false)
