@@ -920,7 +920,7 @@ export class SendMailModel {
 					  }))
 	}
 
-	private handleEntityEvent(update: EntityUpdateData): Promise<void> {
+	handleEntityEvent(update: EntityUpdateData): Promise<void> {
 		const {operation, instanceId, instanceListId} = update
 		let contactId: IdTuple = [neverNull(instanceListId), instanceId]
 
