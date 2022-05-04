@@ -1110,11 +1110,13 @@ styles.registerStyle("main", () => {
 			bottom: 0,
 		},
 		".nav-bar-spacer": {
-			width: "2px",
+			width: "0px",
 			height: "24px",
 			"margin-left": "2px",
 			"margin-top": "10px",
-			"background-color": theme.navigation_border,
+			"outline-color": theme.navigation_border,
+			"outline-width": "1px",
+			"outline-style": "solid"
 		},
 		".search-bar > .text-field": {
 			"padding-top": "0 !important",

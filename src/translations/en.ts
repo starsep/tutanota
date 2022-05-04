@@ -1448,6 +1448,8 @@ export default {
 		"yourFolders_action": "YOUR FOLDERS",
 		"yourMessage_label": "Your message",
 		"you_label": "You",
-		"offlineLoginRequiresPremium_msg": "Offline login requires premium subscription."
+		"offlineLoginRequiresPremium_msg": "Offline login requires premium subscription.",
+		"offline_label": "You're offline",
+		"online_label": "You're online"
 	}
 }

@@ -8,7 +8,9 @@ import type {clickHandler} from "./GuiUtils"
 import type {lazy} from "@tutao/tutanota-utils"
 import {Request} from "../../api/common/MessageDispatcher"
 import {WsConnectionState} from "../../api/main/WorkerClient"
+import {Icons} from "./icons/Icons"
 import {FolderColumnHeaderButton} from "./buttons/FolderColumnHeaderButton"
+import {showSnackBar} from "./SnackBar"
 
 export type Attrs = {
 	/** Button to be displayed on top of the column*/
@@ -62,9 +64,26 @@ export class FolderColumnView implements Component<Attrs> {
 	}
 
 	private renderMainButton(attrs: Attrs): Children {
-		return attrs.button ? m(FolderColumnHeaderButton, {
-			label: attrs.button.label,
-			click: attrs.button.click,
-		}) : null
+		if (attrs.button == null) return null
+		if (this.wsState !== WsConnectionState.connected) {
+			return m(FolderColumnHeaderButton, {
+				label: "offline_label",
+				click: () => showSnackBar({
+					message: "offline_label",
+					button: {
+						label: "ok_action",
+						click: () => {
+						}
+					}
+				}),
+				icon: Icons.Offline2,
+				color: theme.content_button
+			})
+		} else {
+			return m(FolderColumnHeaderButton, {
+				label: attrs.button.label,
+				click: attrs.button.click,
+			})
+		}
 	}
 }

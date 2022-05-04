@@ -6,9 +6,9 @@ import type {lazyIcon} from "./Icon"
 import {Icon} from "./Icon"
 import {getContentButtonIconBackground, getElevatedBackground, getNavButtonIconBackground, getNavigationMenuIcon, theme} from "../theme"
 import type {lazy} from "@tutao/tutanota-utils"
+import {assertNotNull} from "@tutao/tutanota-utils"
 import type {clickHandler} from "./GuiUtils"
 import {assertMainOrNode} from "../../api/common/Env"
-import {assertNotNull} from "@tutao/tutanota-utils"
 
 assertMainOrNode()
 
@@ -32,6 +32,7 @@ export const enum ButtonColor {
 	Content = "content",
 	Elevated = "elevated",
 	DrawerNav = "drawernav",
+	ContentNav = "contentnav",
 }
 
 export function getColors(
@@ -84,7 +85,15 @@ export function getColors(
 				icon_selected: theme.content_button_icon_selected,
 				border: theme.content_bg,
 			}
-
+		case ButtonColor.ContentNav:
+			return {
+				button: theme.content_button,
+				button_selected: theme.content_button_selected,
+				button_icon_bg: "transparent",
+				icon: getNavigationMenuIcon(),
+				icon_selected: theme.content_button_icon_selected,
+				border: theme.content_bg,
+			}
 		case ButtonColor.Content:
 		default:
 			return {
@@ -227,6 +236,7 @@ export class ButtonN implements Component<ButtonAttrs> {
 		}
 	}
 
+	// FIXME: why do colors influence the classes of the button??
 	getIconClass(a: ButtonAttrs): string {
 		const type = this.getType(a.type)
 
@@ -238,7 +248,7 @@ export class ButtonN implements Component<ButtonAttrs> {
 			return "flex-center items-center button-icon icon-large"
 		} else if (type === ButtonType.Floating) {
 			return "flex-center items-center button-icon floating icon-large"
-		} else if (a.colors === ButtonColor.Header) {
+		} else if (a.colors === ButtonColor.Header || a.colors === ButtonColor.ContentNav) {
 			return "flex-end items-center button-icon icon-xl"
 		} else if (a.colors === ButtonColor.DrawerNav) {
 			return "flex-end items-end button-icon"

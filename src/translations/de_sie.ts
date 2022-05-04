@@ -1452,6 +1452,8 @@ export default {
 		"yourFolders_action": "Ihre ORDNER",
 		"yourMessage_label": "Ihre Nachricht",
 		"you_label": "Sie",
-		"offlineLoginRequiresPremium_msg": "Offline-Anmeldung benötigt ein Premium-Abonnement."
+		"offlineLoginRequiresPremium_msg": "Offline-Anmeldung benötigt ein Premium-Abonnement.",
+		"offline_label": "Sie sind offline",
+		"online_label": "Sie sind online",
 	}
 }

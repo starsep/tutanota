@@ -1,4 +1,4 @@
-import m, {Children, Component, Vnode} from "mithril"
+import m, {Children, Component} from "mithril"
 import {NavBar} from "./NavBar"
 import {NavButtonColor, NavButtonN} from "./NavButtonN"
 import {styles} from "../styles"
@@ -20,6 +20,7 @@ import type {ProgressTracker} from "../../api/main/ProgressTracker"
 import type {ViewSlider} from "./ViewSlider"
 import {assertMainOrNode} from "../../api/common/Env"
 import {WsConnectionState} from "../../api/main/WorkerClient";
+import {OfflineIndicatorDesktop, OfflineIndicatorMobile, OfflineIndicatorState} from "./OfflineIndicator"
 
 const LogoutPath = "/login?noAutoLogin=true"
 export const LogoutUrl: string = location.hash.startsWith("#mail") ? "/ext?noAutoLogin=true" + location.hash : LogoutPath
@@ -44,8 +45,6 @@ const PROGRESS_DONE = 1
 
 class Header implements Component {
 	searchBar: SearchBar | null = null
-	oncreate: Component["oncreate"]
-	onremove: Component["onremove"]
 
 	private currentView: CurrentView | null = null // decoupled from ViewSlider implementation to reduce size of bootstrap bundle
 	private readonly shortcuts: Shortcut[]
@@ -54,17 +53,17 @@ class Header implements Component {
 
 	constructor() {
 		this.shortcuts = this.setupShortcuts()
-		this.oncreate = () => keyManager.registerShortcuts(this.shortcuts)
-		this.onremove = () => keyManager.unregisterShortcuts(this.shortcuts)
 
 		// load worker and search bar one after another because search bar uses worker.
 		import("../../api/main/MainLocator").then(async ({locator}) => {
 			await locator.initialized
 			const worker = locator.worker
+			this.wsState = worker.wsConnection()()
 			worker.wsConnection().map(state => {
 				this.wsState = state
 				m.redraw()
 			})
+			m.redraw()
 			await worker.initialized
 			import("../../search/SearchBar.js").then(({SearchBar}) => {
 				this.searchBar = new SearchBar()
@@ -90,54 +89,58 @@ class Header implements Component {
 				}
 			})
 		})
+		// we may be able to remove this when we stop creating the Header with new
+		this.view = this.view.bind(this)
+		this.onremove = this.onremove.bind(this)
+		this.oncreate = this.oncreate.bind(this)
 	}
 
 	view(): Children {
 		// Do not return undefined if headerView is not present
-		const injectedView = this.currentView && this.currentView.headerView
-			? this.currentView.headerView()
-			: null
-		// manual margin to align the hamburger icon on mobile devices
-		const style = styles.isUsingBottomNavigation()
-			? {"margin-left": px(-15)}
-			: null
+		const injectedView = this.currentView?.headerView?.()
 		return m(
 			".header-nav.overflow-hidden.flex.items-end.flex-center",
 			[
-				m(".abs.full-width", this.renderConnectionIndicator() || this.renderEntityEventProgress()),
+				m(".abs.full-width", this.renderEntityEventProgress()),
 				injectedView
 					? m(".flex-grow", injectedView)
 					: [
-						m(".header-left.pl-l.ml-negative-s.flex-start.items-center.overflow-hidden", {style}, this.renderLeftElements()),
-						styles.isUsingBottomNavigation() ? this.renderCenterContent() : null,
-						styles.isUsingBottomNavigation() ? this.renderNewItemButton() : this.renderHeaderWidgets(),
+						this.renderLeftContent(),
+						this.renderCenterContent(),
+						this.renderRightContent()
 					],
+				styles.isUsingBottomNavigation() ? this.renderOfflineIndicator(OfflineIndicatorMobile) : null
 			],
 		)
 	}
 
-	/**
-	 * render the new mail/contact/event icon in the top right of the one- and two-column layouts
-	 * @private
-	 */
-	private renderNewItemButton(): Children {
-		return m(
-			".header-right.pr-s.flex-end.items-center",
-			this.currentView && this.currentView.headerRightView
-				? this.currentView.headerRightView()
-				: null
-		)
+	oncreate(): void {
+		keyManager.registerShortcuts(this.shortcuts)
+	}
+
+	onremove(): void {
+		keyManager.unregisterShortcuts(this.shortcuts)
 	}
 
 	/**
-	 * render the search and navigation bar in three-column layouts
+	 * render the new mail/contact/event icon in the top right of the one- and two-column layouts
+	 * or the offline indicator if the client is in offline mode
 	 * @private
 	 */
-	private renderHeaderWidgets(): Children {
-		return m(".header-right.pr-l.mr-negative-m.flex-end.items-center", [
-			this.renderDesktopSearchBar(),
-			m(NavBar, this.renderButtons()),
-		])
+	private renderSmallNavigation(): Children {
+		return m(".header-right.pr-s.flex-end.items-center", this.currentView?.headerRightView?.())
+	}
+
+	/**
+	 * render the search and navigation bar in three-column layouts. if there is a navigation, also render an offline indicator.
+	 * @private
+	 */
+	private renderFullNavigation(): Children {
+		const buttons = this.renderButtons()
+		return m(".header-right.pr-l.mr-negative-m.flex-end.items-center", buttons
+			? [this.renderDesktopSearchBar(), this.renderOfflineIndicator(OfflineIndicatorDesktop), m(".nav-bar-spacer"), m(NavBar, buttons)]
+			: [this.renderDesktopSearchBar(), m(NavBar, null)]
+		)
 	}
 
 	private renderDesktopSearchBar(): Children {
@@ -241,6 +244,8 @@ class Header implements Component {
 	}
 
 	private renderCenterContent(): Children {
+		if (!styles.isUsingBottomNavigation()) return null
+
 		const viewSlider = this.getViewSlider()
 
 		const header = (title: string, left?: Children, right?: Children) => {
@@ -269,7 +274,25 @@ class Header implements Component {
 		}
 	}
 
-	private renderMobileSearchBar(): Vnode<any> {
+	private renderOfflineIndicator(componentRef: typeof OfflineIndicatorMobile | OfflineIndicatorDesktop): Children {
+		if (this.loadingProgress !== PROGRESS_HIDDEN && this.loadingProgress !== PROGRESS_DONE) {
+			return m(componentRef, {state: OfflineIndicatorState.Synchronizing, progress: this.loadingProgress})
+		} else if (this.loadingProgress !== PROGRESS_HIDDEN) {
+			return m(componentRef, {state: OfflineIndicatorState.Online})
+		} else {
+			if (this.wsState === WsConnectionState.connected) {
+				return m(componentRef, {state: OfflineIndicatorState.Online})
+			} else {
+				return m(componentRef, {state: OfflineIndicatorState.Offline, lastUpdate: new Date()})
+			}
+		}
+	}
+
+	private renderRightContent(): Children {
+		return styles.isUsingBottomNavigation() ? this.renderSmallNavigation() : this.renderFullNavigation()
+	}
+
+	private renderMobileSearchBar(): Children {
 		let placeholder
 		const route = m.route.get()
 
@@ -293,11 +316,16 @@ class Header implements Component {
 		})
 	}
 
-	private renderLeftElements(): Children {
+	private renderLeftContent(): Children {
+		// manual margin to align the hamburger icon on mobile devices
+		const style = styles.isUsingBottomNavigation()
+			? {"margin-left": px(-15)}
+			: null
 		const viewSlider = this.getViewSlider()
 
+		let content: Children = null
 		if (viewSlider && viewSlider.isFocusPreviousPossible()) {
-			return m(NavButtonN, {
+			content = m(NavButtonN, {
 				label: () => {
 					const prevColumn = viewSlider.getPreviousColumn()
 					return prevColumn ? prevColumn.getTitle() : ""
@@ -319,21 +347,19 @@ class Header implements Component {
 				},
 				hideLabel: true,
 			})
-		} else {
-			if (!styles.isUsingBottomNavigation() && (!viewSlider || viewSlider.isUsingOverlayColumns())) {
-				return m(
-					".logo.logo-height.pl" + landmarkAttrs(AriaLandmarks.Banner, "Tutanota logo"),
-					{
-						style: {
-							"margin-left": px(sizes.drawer_menu_width),
-						},
+		} else if (!styles.isUsingBottomNavigation() && (!viewSlider || viewSlider.isUsingOverlayColumns())) {
+			content = m(
+				".logo.logo-height.pl" + landmarkAttrs(AriaLandmarks.Banner, "Tutanota logo"),
+				{
+					style: {
+						"margin-left": px(sizes.drawer_menu_width),
 					},
-					m.trust(theme.logo),
-				) // the custom logo is already sanitized in theme.js
-			} else {
-				return null
-			}
+				},
+				m.trust(theme.logo),
+			) // the custom logo is already sanitized in theme.js
 		}
+
+		return m(".header-left.pl-l.ml-negative-s.flex-start.items-center.overflow-hidden", {style}, content)
 	}
 
 	updateCurrentView(currentView: CurrentView) {
@@ -345,17 +371,6 @@ class Header implements Component {
 			return this.currentView.getViewSlider()
 		} else {
 			return null
-		}
-	}
-
-	private renderConnectionIndicator(): Children {
-		if (this.wsState === WsConnectionState.connected || this.wsState === WsConnectionState.terminated) {
-			return null
-		} else {
-			// Use key so that mithril does not reuse dom element and transition works correctly
-			return m(".indefinite-progress", {
-				key: "connection-indicator",
-			})
 		}
 	}
 

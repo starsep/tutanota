@@ -1435,3 +1435,5 @@ export type TranslationKeyType =
 	| "you_label"
 	| "emptyString_msg"
     | "offlineLoginRequiresPremium_msg"
+	| "offline_label" // TODO: add to phrase
+	| "online_label" // TODO: add to phrase
