@@ -491,7 +491,8 @@ export class SendMailModel {
 		const {to = [], cc = [], bcc = []} = recipients
 
 		const makeRecipientInfo = (r: Recipient) => {
-			const [recipient] = this._createAndResolveRecipientInfo(r.name, r.address, r.contact, false)
+			const [recipient, recipientInfoPromise] = this._createAndResolveRecipientInfo(r.name, r.address, r.contact, false)
+			recipientInfoPromise.then(() => (this._mailChanged = false))
 
 			if (recipient.resolveContactPromise) {
 				recipient.resolveContactPromise.then(() => (this._mailChanged = false))
