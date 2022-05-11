@@ -5,7 +5,7 @@ import type {Guest} from "../../../src/calendar/date/CalendarEventViewModel"
 import {CalendarEventViewModel} from "../../../src/calendar/date/CalendarEventViewModel"
 import {lang} from "../../../src/misc/LanguageViewModel"
 import {assertThrows, unmockAttribute} from "@tutao/tutanota-test-utils"
-import {clone, delay, downcast, neverNull, noOp} from "@tutao/tutanota-utils"
+import {clone, delay, downcast, LazyLoaded, neverNull, noOp} from "@tutao/tutanota-utils"
 import type {MailboxDetail} from "../../../src/mail/model/MailModel"
 import {MailModel} from "../../../src/mail/model/MailModel"
 import type {CalendarEvent, Mail} from "../../../src/api/entities/tutanota/TypeRefs.js"
@@ -46,11 +46,11 @@ import {
 	makeMailboxDetail,
 	makeUserController,
 } from "./CalendarTestUtils"
-import {RecipientType} from "../../../src/api/common/recipients/Recipient.js"
+import {Recipient, RecipientType} from "../../../src/api/common/recipients/Recipient.js"
 import {RecipientsModel, ResolvableRecipient} from "../../../src/api/main/RecipientsModel"
 import {instance, matchers, object, when} from "testdouble"
 import {isTutanotaMailAddress} from "../../../src/mail/model/MailUtils.js"
-import { ContactModel } from "../../../src/contacts/model/ContactModel"
+import {ContactModel} from "../../../src/contacts/model/ContactModel"
 
 const now = new Date(2020, 4, 25, 13, 40)
 const zone = getTimeZone()
@@ -62,11 +62,70 @@ const wrapEncIntoMailAddress = address =>
 
 const encMailAddress: EncryptedMailAddress = wrapEncIntoMailAddress(accountMailAddress)
 
-const getAddress = a => a.mailAddress
+const getAddress = (a: ResolvableRecipient) => a.address
 
 let internalAddresses: string[] = []
 let resolveRecipientMs = 100
 let mockedAttributeReferences = []
+
+
+class ResolvableRecipientMock implements ResolvableRecipient {
+	public name: string
+	public type: RecipientType
+
+	private _resolved = false
+	private lazyResolve = new LazyLoaded<Recipient>(async () => {
+		this._resolved = true
+		this.type = this.internalAddresses.includes(this.address) ? RecipientType.INTERNAL : RecipientType.EXTERNAL
+		this.contact = this.existingContacts.find(contact => contact.mailAddresses.some(address => address.address === this.address)) ?? null
+
+		return {
+			address: this.address,
+			name: this.name,
+			contact: this.contact,
+			type: this.type
+		}
+	})
+
+
+	constructor(
+		public address: string,
+		name: string | null,
+		public contact: Contact | null,
+		type: RecipientType | null,
+		private internalAddresses: string[],
+		private existingContacts: Contact[],
+		resolveLazily: boolean
+	) {
+		this.name = name ?? ""
+		this.type = type ?? (isTutanotaMailAddress(address) ? RecipientType.INTERNAL : RecipientType.UNKNOWN)
+
+		if (!resolveLazily) {
+			this.lazyResolve.getAsync()
+		}
+	}
+
+	isResolved(): boolean {
+		return this._resolved;
+	}
+
+	resolved(): Promise<Recipient> {
+		return this.lazyResolve.getAsync();
+	}
+
+	setContact(contact: Contact): void {
+		this.contact = contact
+	}
+
+	setName(name: string): void {
+		this.name = name
+	}
+
+	whenResolved(onResolved: (resolvedRecipient: Recipient) => void): this {
+		throw new Error("STUB")
+	}
+}
+
 
 o.spec("CalendarEventViewModel", function () {
 	let inviteModel: SendMailModel
@@ -129,34 +188,16 @@ o.spec("CalendarEventViewModel", function () {
 
 		recipientsModel = instance(RecipientsModel)
 
-		when(recipientsModel.resolve(matchers.anything())).thenDo(({address, name, contact, type}) => {
-
-			contact = contact ?? existingContacts.find(contact => contact.mailAddresses.some(addr => addr.address === address)) ?? null
-			type = type ?? (isTutanotaMailAddress(address) || internalAddresses.includes(address) ? RecipientType.INTERNAL : RecipientType.EXTERNAL)
-
-			// TODO maybe mock lazy resolution
-			return {
+		when(recipientsModel.resolve(matchers.anything())).thenDo(({address, name, contact, type, resolveLazily}) => {
+			return new ResolvableRecipientMock(
 				address,
-				name,
-				contact,
-				type,
-				async resolved() {
-					return this
-				},
-				isResolved() {
-					return true
-				},
-				whenResolved(action) {
-					action(this)
-					return this
-				},
-				setContact(contact) {
-					this.contact = contact
-				},
-				setName(name) {
-					this.name = name
-				}
-			} as ResolvableRecipient
+				name ?? null,
+				contact ?? null,
+				type ?? null,
+				internalAddresses,
+				existingContacts,
+				resolveLazily
+			)
 		})
 
 		inviteModel = new SendMailModel(
@@ -1498,15 +1539,11 @@ o.spec("CalendarEventViewModel", function () {
 				askInsecurePassword,
 				showProgress,
 			})
-			// @ts-ignore
 			o(calendarModel.updateEvent.calls.length).equals(1)("created event")
-			// @ts-ignore
 			o(distributor.sendUpdate.calls[0].args[1]).equals(updateModel)("update")
 			o(updateModel.bccRecipients().map(getAddress)).deepEquals([oldGuest])
-			// @ts-ignore
 			o(distributor.sendInvite.calls[0].args[1]).equals(inviteModel)("invite")
 			o(inviteModel.bccRecipients().map(getAddress)).deepEquals([newGuest])
-			// @ts-ignore
 			o(distributor.sendCancellation.calls[0].args[1]).equals(cancelModel)("cancel")
 			o(cancelModel.bccRecipients().map(getAddress)).deepEquals([toRemoveGuest.address.address])
 			o(askForUpdates.calls.length).equals(1)
