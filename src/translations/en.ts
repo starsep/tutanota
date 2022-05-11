@@ -1450,6 +1450,7 @@ export default {
 		"you_label": "You",
 		"offlineLoginRequiresPremium_msg": "Offline login requires premium subscription.",
 		"offline_label": "You're offline",
-		"online_label": "You're online"
+		"online_label": "You're online",
+		"reconnect_action": "Reconnect",
 	}
 }

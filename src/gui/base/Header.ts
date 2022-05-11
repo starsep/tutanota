@@ -16,11 +16,10 @@ import type {IMainLocator} from "../../api/main/MainLocator"
 import {client} from "../../misc/ClientDetector"
 import {CALENDAR_PREFIX, CONTACTS_PREFIX, MAIL_PREFIX, navButtonRoutes, SEARCH_PREFIX} from "../../misc/RouteChange"
 import {AriaLandmarks, landmarkAttrs} from "../AriaUtils"
-import type {ProgressTracker} from "../../api/main/ProgressTracker"
 import type {ViewSlider} from "./ViewSlider"
 import {assertMainOrNode} from "../../api/common/Env"
-import {WsConnectionState} from "../../api/main/WorkerClient";
-import {OfflineIndicatorDesktop, OfflineIndicatorMobile, OfflineIndicatorState} from "./OfflineIndicator"
+import {OfflineIndicatorDesktop, OfflineIndicatorMobile, OfflineIndicatorViewModel} from "./OfflineIndicator"
+import {ProgressBar} from "./ProgressBar"
 
 const LogoutPath = "/login?noAutoLogin=true"
 export const LogoutUrl: string = location.hash.startsWith("#mail") ? "/ext?noAutoLogin=true" + location.hash : LogoutPath
@@ -40,16 +39,13 @@ export interface CurrentView extends Component {
 	readonly overrideBackIcon?: () => boolean
 }
 
-const PROGRESS_HIDDEN = -1
-const PROGRESS_DONE = 1
-
 class Header implements Component {
 	searchBar: SearchBar | null = null
 
 	private currentView: CurrentView | null = null // decoupled from ViewSlider implementation to reduce size of bootstrap bundle
 	private readonly shortcuts: Shortcut[]
-	private wsState = WsConnectionState.terminated
-	private loadingProgress: number = PROGRESS_HIDDEN
+	private readonly offlineIndicatorModel = new OfflineIndicatorViewModel(() => m.redraw())
+	private lastProgress: number = 0
 
 	constructor() {
 		this.shortcuts = this.setupShortcuts()
@@ -58,36 +54,12 @@ class Header implements Component {
 		import("../../api/main/MainLocator").then(async ({locator}) => {
 			await locator.initialized
 			const worker = locator.worker
-			this.wsState = worker.wsConnection()()
-			worker.wsConnection().map(state => {
-				this.wsState = state
-				m.redraw()
-			})
-			m.redraw()
+			this.offlineIndicatorModel.setWsStateStream(worker.wsConnection())
 			await worker.initialized
 			import("../../search/SearchBar.js").then(({SearchBar}) => {
 				this.searchBar = new SearchBar()
 			})
-			const progressTracker: ProgressTracker = locator.progressTracker
-
-			if (progressTracker.totalWork() !== 0) {
-				this.loadingProgress = progressTracker.completedAmount()
-			}
-
-			progressTracker.onProgressUpdate.map(amount => {
-				if (this.loadingProgress !== amount) {
-					this.loadingProgress = amount
-					m.redraw()
-
-					if (this.loadingProgress >= PROGRESS_DONE) {
-						// progress is done but we still want to finish the complete animation and then dismiss the progress bar.
-						setTimeout(() => {
-							this.loadingProgress = PROGRESS_HIDDEN
-							m.redraw()
-						}, 500)
-					}
-				}
-			})
+			this.offlineIndicatorModel.setProgressUpdateStream(locator.progressTracker.onProgressUpdate)
 		})
 		// we may be able to remove this when we stop creating the Header with new
 		this.view = this.view.bind(this)
@@ -101,7 +73,7 @@ class Header implements Component {
 		return m(
 			".header-nav.overflow-hidden.flex.items-end.flex-center",
 			[
-				m(".abs.full-width", this.renderEntityEventProgress()),
+				m(ProgressBar, {progress: this.offlineIndicatorModel.getProgress()}),
 				injectedView
 					? m(".flex-grow", injectedView)
 					: [
@@ -275,17 +247,14 @@ class Header implements Component {
 	}
 
 	private renderOfflineIndicator(componentRef: typeof OfflineIndicatorMobile | OfflineIndicatorDesktop): Children {
-		if (this.loadingProgress !== PROGRESS_HIDDEN && this.loadingProgress !== PROGRESS_DONE) {
-			return m(componentRef, {state: OfflineIndicatorState.Synchronizing, progress: this.loadingProgress})
-		} else if (this.loadingProgress !== PROGRESS_HIDDEN) {
-			return m(componentRef, {state: OfflineIndicatorState.Online})
-		} else {
-			if (this.wsState === WsConnectionState.connected) {
-				return m(componentRef, {state: OfflineIndicatorState.Online})
-			} else {
-				return m(componentRef, {state: OfflineIndicatorState.Offline, lastUpdate: new Date()})
-			}
-		}
+		return m(componentRef, this.offlineIndicatorModel.getCurrentAttrs())
+		/*		if (this.loadingProgress !== PROGRESS_HIDDEN && this.loadingProgress !== PROGRESS_DONE) {
+					return m(componentRef, {state: OfflineIndicatorState.Synchronizing, progress: this.loadingProgress})
+				} else if (this.loadingProgress !== PROGRESS_HIDDEN || this.wsState === WsConnectionState.connected) {
+					return m(componentRef, {state: OfflineIndicatorState.Online})
+				} else {
+					return m(componentRef, {state: OfflineIndicatorState.Offline, lastUpdate: new Date()})
+				}*/
 	}
 
 	private renderRightContent(): Children {
@@ -369,22 +338,6 @@ class Header implements Component {
 	getViewSlider(): ViewSlider | null {
 		if (this.currentView && this.currentView.getViewSlider) {
 			return this.currentView.getViewSlider()
-		} else {
-			return null
-		}
-	}
-
-	private renderEntityEventProgress(): Children {
-		if (this.loadingProgress !== PROGRESS_HIDDEN) {
-			// Use key so that mithril does not reuse dom element and transition works correctly
-			return m(".accent-bg", {
-				key: "loading-indicator",
-				style: {
-					transition: "width 500ms",
-					width: this.loadingProgress * 100 + "%",
-					height: "3px",
-				},
-			})
 		} else {
 			return null
 		}

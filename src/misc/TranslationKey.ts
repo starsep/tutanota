@@ -1437,3 +1437,4 @@ export type TranslationKeyType =
     | "offlineLoginRequiresPremium_msg"
 	| "offline_label" // TODO: add to phrase
 	| "online_label" // TODO: add to phrase
+	| "reconnect_action"

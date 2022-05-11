@@ -14,7 +14,15 @@ export interface ILoginListener {
 	 */
 	onFullLoginSuccess(): Promise<void>
 
-	onLoginError(): Promise<void>
+	/**
+	 * callback for when the session is invalid
+	 */
+	onLoginFailure(): Promise<void>
+
+	/**
+	 *  (network errors might be recoverable, this is not)
+	 */
+	onLoginNetworkError(): Promise<void>
 
 	/**
 	 * Shows a dialog with possibility to use second factor and with a message that the login can be approved from another client.
@@ -43,12 +51,16 @@ export class LoginListener implements ILoginListener {
 		this.loginPromise.resolve()
 	}
 
-	async onLoginError(): Promise<void> {
+	async onLoginFailure(): Promise<void> {
 		const {reloginForExpiredSession} = await import("../../misc/ErrorHandlerImpl.js")
 		await reloginForExpiredSession()
 	}
 
 	onSecondFactorChallenge(sessionId: IdTuple, challenges: ReadonlyArray<Challenge>, mailAddress: string | null): Promise<void> {
 		return this.secondFactorHandler.showSecondFactorAuthenticationDialog(sessionId, challenges, mailAddress)
+	}
+
+	onLoginNetworkError(): Promise<void> {
+		return Promise.resolve(undefined);
 	}
 }

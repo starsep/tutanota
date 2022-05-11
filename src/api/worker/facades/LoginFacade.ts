@@ -473,9 +473,10 @@ export class LoginFacadeImpl implements LoginFacade {
 			if (e instanceof NotAuthenticatedError || e instanceof SessionExpiredError) {
 				// For this type of errors we cannot use credentials anymore.
 				this.asyncLoginState = {state: "idle"}
-				await this.loginListener.onLoginError()
+				await this.loginListener.onLoginFailure()
 			} else {
 				this.asyncLoginState = {state: "failed", credentials, usingOfflineStorage}
+				// todo: put another callback so this is recognizable as what it is
 				if (!(e instanceof ConnectionError)) await this.worker.sendError(e)
 			}
 		} finally {

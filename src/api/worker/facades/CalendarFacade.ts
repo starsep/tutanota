@@ -79,7 +79,7 @@ export class CalendarFacade {
 		private readonly userFacade: UserFacade,
 		private readonly groupManagementFacade: GroupManagementFacadeImpl,
 		// We inject cache directly because we need to delete user from it for a hack
-		private readonly entityRestCache: EntityRestCache,
+		readonly entityRestCache: EntityRestCache,
 		private readonly native: NativeInterface,
 		private readonly worker: WorkerImpl,
 		private readonly instanceMapper: InstanceMapper,
