@@ -9,10 +9,9 @@ import {
 	ShareCapability,
 	TimeFormat,
 } from "../../api/common/TutanotaConstants"
-import {createCalendarEventAttendee} from "../../api/entities/tutanota/TypeRefs.js"
-import type {CalendarEvent} from "../../api/entities/tutanota/TypeRefs.js"
-import {createCalendarEvent} from "../../api/entities/tutanota/TypeRefs.js"
-import type {AlarmInfo} from "../../api/entities/sys/TypeRefs.js"
+import type {CalendarEvent, CalendarRepeatRule, Contact, EncryptedMailAddress, Mail} from "../../api/entities/tutanota/TypeRefs.js"
+import {createCalendarEvent, createCalendarEventAttendee, createEncryptedMailAddress} from "../../api/entities/tutanota/TypeRefs.js"
+import type {AlarmInfo, RepeatRule} from "../../api/entities/sys/TypeRefs.js"
 import {createAlarmInfo} from "../../api/entities/sys/TypeRefs.js"
 import type {MailboxDetail} from "../../mail/model/MailModel"
 import stream from "mithril/stream"
@@ -46,23 +45,17 @@ import {
 	neverNull,
 	noOp,
 	ofClass,
-	promiseMap,
 } from "@tutao/tutanota-utils"
 import {generateEventElementId, isAllDayEvent} from "../../api/common/utils/CommonCalendarUtils"
 import type {CalendarInfo} from "../model/CalendarModel"
 import {CalendarModel} from "../model/CalendarModel"
 import {DateTime} from "luxon"
-import type {EncryptedMailAddress} from "../../api/entities/tutanota/TypeRefs.js"
-import {createEncryptedMailAddress} from "../../api/entities/tutanota/TypeRefs.js"
 import {NotFoundError, PayloadTooLargeError, TooManyRequestsError} from "../../api/common/error/RestError"
 import type {CalendarUpdateDistributor} from "./CalendarUpdateDistributor"
 import {calendarUpdateDistributor} from "./CalendarUpdateDistributor"
 import type {IUserController} from "../../api/main/UserController"
-import type {Contact} from "../../api/entities/tutanota/TypeRefs.js"
 import type {SendMailModel} from "../../mail/editor/SendMailModel"
-import type {RepeatRule} from "../../api/entities/sys/TypeRefs.js"
 import {UserError} from "../../api/main/UserError"
-import type {Mail} from "../../api/entities/tutanota/TypeRefs.js"
 import {logins} from "../../api/main/LoginController"
 import {locator} from "../../api/main/MainLocator"
 import {EntityClient} from "../../api/common/EntityClient"
@@ -70,7 +63,6 @@ import {BusinessFeatureRequiredError} from "../../api/main/BusinessFeatureRequir
 import {hasCapabilityOnGroup} from "../../sharing/GroupUtils"
 import {Time} from "../../api/common/utils/Time"
 import {hasError} from "../../api/common/utils/ErrorCheckUtils"
-import type {CalendarRepeatRule} from "../../api/entities/tutanota/TypeRefs.js"
 import {Recipient, RecipientType} from "../../api/common/recipients/Recipient"
 
 const TIMESTAMP_ZERO_YEAR = 1970
@@ -709,15 +701,20 @@ export class CalendarEventViewModel {
 		return this._eventType === EventType.OWN || this._eventType === EventType.INVITE || this._eventType === EventType.SHARED_RW
 	}
 
-	deleteEvent(): Promise<void> {
+	async deleteEvent(): Promise<void> {
 		const event = this.existingEvent
-
 		if (event) {
-			// We must always be in attendees so we just check that there's more than one attendee
-			const awaitCancellation = this._eventType === EventType.OWN && event.attendees.length > 1 ? this._sendCancellation(event) : Promise.resolve()
-			return awaitCancellation.then(() => this._calendarModel.deleteEvent(event)).catch(ofClass(NotFoundError, noOp))
-		} else {
-			return Promise.resolve()
+			try {
+				// We must always be in attendees so we just check that there's more than one attendee
+				if (this._eventType === EventType.OWN && event.attendees.length > 1) {
+					await this.sendCancellation(event)
+				}
+				return this._calendarModel.deleteEvent(event).catch(ofClass(NotFoundError, noOp))
+			} catch (e) {
+				if (!(e instanceof NotFoundError)) {
+					throw e
+				}
+			}
 		}
 	}
 
@@ -786,38 +783,40 @@ export class CalendarEventViewModel {
 					  })
 	}
 
-	_sendCancellation(event: CalendarEvent): Promise<any> {
+	private async sendCancellation(event: CalendarEvent): Promise<any> {
 		const updatedEvent = clone(event)
+
 		// This is guaranteed to be our own event.
 		updatedEvent.sequence = incrementSequence(updatedEvent.sequence, true)
 		const cancelAddresses = event.attendees.filter(a => !this._ownMailAddresses.includes(a.address.address)).map(a => a.address)
 
+		try {
+			for (const address of cancelAddresses) {
+				this._cancelModel.addRecipient(RecipientField.BCC, {
+					name: address.name,
+					address: address.address,
+					contact: null,
+				})
 
-		return promiseMap(cancelAddresses, async a => {
-			this._cancelModel.addRecipient(RecipientField.BCC, {
-				name: a.name,
-				address: a.address,
-				contact: null,
-			})
+				const recipient = await this._cancelModel.getRecipient(RecipientField.BCC, address.address)!.resolved()
 
-			const recipient = await this._cancelModel.getRecipient(RecipientField.BCC, a.address)!.resolved()
-
-			//We cannot send a notification to external recipients without a password, so we exclude them
-			if (this._cancelModel.isConfidential()) {
-				if (recipient.type === RecipientType.EXTERNAL && !this._cancelModel.getPassword(recipient.address)) {
-					this._cancelModel.removeRecipient(recipient, RecipientField.BCC, false)
+				// We cannot send a notification to external recipients without a password, so we exclude them
+				if (this._cancelModel.isConfidential()) {
+					if (recipient.type === RecipientType.EXTERNAL && !this._cancelModel.getPassword(recipient.address)) {
+						this._cancelModel.removeRecipient(recipient, RecipientField.BCC, false)
+					}
 				}
 			}
-		})
-			.then(() => {
-				//We check if there are any attendees left to send the cancellation to
-				return this._cancelModel.allRecipients().length ? this._distributor.sendCancellation(updatedEvent, this._cancelModel) : Promise.resolve()
-			})
-			.catch(
-				ofClass(TooManyRequestsError, () => {
-					throw new UserError("mailAddressDelay_msg") // This will be caught and open error dialog
-				}),
-			)
+			if (this._cancelModel.allRecipients().length) {
+				await this._distributor.sendCancellation(updatedEvent, this._cancelModel)
+			}
+		} catch (e) {
+			if (e instanceof TooManyRequestsError) {
+				throw new UserError("mailAddressDelay_msg") // This will be caught and open error dialog
+			} else {
+				throw e
+			}
+		}
 	}
 
 	_saveEvent(newEvent: CalendarEvent, newAlarms: Array<AlarmInfo>): Promise<void> {

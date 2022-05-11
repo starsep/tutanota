@@ -10,6 +10,7 @@ import type {MailboxDetail} from "../../../src/mail/model/MailModel"
 import {MailModel} from "../../../src/mail/model/MailModel"
 import type {CalendarEvent, Mail} from "../../../src/api/entities/tutanota/TypeRefs.js"
 import {
+	Contact,
 	createCalendarEvent,
 	createCalendarEventAttendee,
 	createContact,
@@ -29,7 +30,6 @@ import {getAllDayDateUTCFromZone, getTimeZone} from "../../../src/calendar/date/
 import {DateTime} from "luxon"
 import {SendMailModel} from "../../../src/mail/editor/SendMailModel"
 import type {LoginController} from "../../../src/api/main/LoginController"
-import type {ContactModel} from "../../../src/contacts/model/ContactModel"
 import {EventController} from "../../../src/api/main/EventController"
 import {EntityClient} from "../../../src/api/common/EntityClient"
 import {BusinessFeatureRequiredError} from "../../../src/api/main/BusinessFeatureRequiredError"
@@ -42,14 +42,15 @@ import {
 	makeCalendarInfo,
 	makeCalendarModel,
 	makeCalendars,
-	makeContactModel,
 	makeDistributor,
 	makeMailboxDetail,
 	makeUserController,
 } from "./CalendarTestUtils"
 import {RecipientType} from "../../../src/api/common/recipients/Recipient.js"
-import {RecipientsModel} from "../../../src/api/main/RecipientsModel"
-import {instance, matchers, when} from "testdouble"
+import {RecipientsModel, ResolvableRecipient} from "../../../src/api/main/RecipientsModel"
+import {instance, matchers, object, when} from "testdouble"
+import {isTutanotaMailAddress} from "../../../src/mail/model/MailUtils.js"
+import { ContactModel } from "../../../src/contacts/model/ContactModel"
 
 const now = new Date(2020, 4, 25, 13, 40)
 const zone = getTimeZone()
@@ -66,6 +67,7 @@ const getAddress = a => a.mailAddress
 let internalAddresses: string[] = []
 let resolveRecipientMs = 100
 let mockedAttributeReferences = []
+
 o.spec("CalendarEventViewModel", function () {
 	let inviteModel: SendMailModel
 	let updateModel: SendMailModel
@@ -84,8 +86,8 @@ o.spec("CalendarEventViewModel", function () {
 							existingEvent,
 							calendarModel = makeCalendarModel(),
 							mailModel = downcast({}),
-							contactModel = makeContactModel(),
 							mail = null,
+							existingContacts = []
 						}: {
 		userController?: IUserController
 		distributor?: CalendarUpdateDistributor
@@ -93,9 +95,9 @@ o.spec("CalendarEventViewModel", function () {
 		calendars: Map<Id, CalendarInfo>
 		calendarModel?: CalendarModel
 		mailModel?: MailModel
-		contactModel?: ContactModel
 		existingEvent: CalendarEvent | null
-		mail?: Mail | null | undefined
+		mail?: Mail | null | undefined,
+		existingContacts?: Array<Contact>
 	}): Promise<CalendarEventViewModel> {
 
 		const loginController: LoginController = downcast({
@@ -107,6 +109,8 @@ o.spec("CalendarEventViewModel", function () {
 			removeEntityListener: noOp,
 		})
 		const entityClient = new EntityClient(new EntityRestClientMock())
+
+		// TODO use testdouble on this
 		const mailFacadeMock = downcast<MailFacade>({
 			async getRecipientKeyData(mailAddress: string) {
 				await delay(resolveRecipientMs)
@@ -121,7 +125,39 @@ o.spec("CalendarEventViewModel", function () {
 			},
 		})
 
-		recipientsModel = new RecipientsModel(contactModel, loginController, mailFacadeMock, entityClient)
+		const contactModel = object<ContactModel>()
+
+		recipientsModel = instance(RecipientsModel)
+
+		when(recipientsModel.resolve(matchers.anything())).thenDo(({address, name, contact, type}) => {
+
+			contact = contact ?? existingContacts.find(contact => contact.mailAddresses.some(addr => addr.address === address)) ?? null
+			type = type ?? (isTutanotaMailAddress(address) || internalAddresses.includes(address) ? RecipientType.INTERNAL : RecipientType.EXTERNAL)
+
+			// TODO maybe mock lazy resolution
+			return {
+				address,
+				name,
+				contact,
+				type,
+				async resolved() {
+					return this
+				},
+				isResolved() {
+					return true
+				},
+				whenResolved(action) {
+					action(this)
+					return this
+				},
+				setContact(contact) {
+					this.contact = contact
+				},
+				setName(name) {
+					this.name = name
+				}
+			} as ResolvableRecipient
+		})
 
 		inviteModel = new SendMailModel(
 			mailFacadeMock,
@@ -947,9 +983,7 @@ o.spec("CalendarEventViewModel", function () {
 			})
 			await viewModel.deleteEvent()
 			// This doesn't always pass because sometimes the start and end times are off by a fraction of a second
-			// @ts-ignore
 			o(calendarModel.deleteEvent.calls.map(c => c.args)).deepEquals([[existingEvent]])
-			// @ts-ignore
 			o(distributor.sendCancellation.calls.map(c => c.args[0])).deepEquals([newEvent])
 			o(cancelModel.bccRecipients().map(r => r.address)).deepEquals([attendee.address.address])
 		})
@@ -968,7 +1002,6 @@ o.spec("CalendarEventViewModel", function () {
 				],
 				presharedPassword: "123",
 			})
-			const contactModel = makeContactModel([contact])
 			const startTime = DateTime.fromISO("2016-05-25T09:08:34.123", {
 				zone: "UTC",
 			}).toJSDate()
@@ -1001,7 +1034,7 @@ o.spec("CalendarEventViewModel", function () {
 				calendarModel,
 				distributor,
 				mailModel,
-				contactModel,
+				existingContacts: [contact],
 			})
 			await viewModel.deleteEvent()
 			// @ts-ignore
@@ -1025,7 +1058,6 @@ o.spec("CalendarEventViewModel", function () {
 				],
 				presharedPassword: "123",
 			})
-			const contactModel = makeContactModel([contact])
 			const existingEvent = createCalendarEvent({
 				_id: ["listid", "calendarid"],
 				_ownerGroup: calendarGroupId,
@@ -1048,7 +1080,7 @@ o.spec("CalendarEventViewModel", function () {
 				calendarModel,
 				distributor,
 				mailModel,
-				contactModel,
+				existingContacts: [contact],
 			})
 			await viewModel.deleteEvent()
 			// This doesn't always pass because sometimes the start and end times are off by a fraction of a second
@@ -1074,7 +1106,6 @@ o.spec("CalendarEventViewModel", function () {
 				],
 				presharedPassword: null,
 			})
-			const contactModel = makeContactModel([contact])
 
 			// specify start and end date specifically,
 			// because sometimes deepEquals fails due to milliseconds being off by a fraction (even though it's the same object?)
@@ -1096,7 +1127,7 @@ o.spec("CalendarEventViewModel", function () {
 				calendarModel,
 				distributor,
 				mailModel,
-				contactModel,
+				existingContacts: [contact],
 			})
 			await viewModel.deleteEvent()
 			o(calendarModel.deleteEvent.calls.map(c => c.args)).deepEquals([[existingEvent]])
@@ -1122,7 +1153,6 @@ o.spec("CalendarEventViewModel", function () {
 					],
 					presharedPassword: null,
 				})
-				const contactModel = makeContactModel([contact])
 				const existingEvent = createCalendarEvent({
 					_id: ["listid", "calendarid"],
 					_ownerGroup: calendarGroupId,
@@ -1137,7 +1167,7 @@ o.spec("CalendarEventViewModel", function () {
 					calendarModel,
 					distributor,
 					mailModel,
-					contactModel,
+					existingContacts: [contact],
 				})
 				await viewModel.deleteEvent()
 				// This doesn't always pass because sometimes the start and end times are off by a fraction of a second
